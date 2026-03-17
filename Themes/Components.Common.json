@@ -1,0 +1,158 @@
+{
+  "surface": {
+    "base": {
+      "$type": "color",
+      "$value": "{Global.color.white}"
+    },
+    "subtle": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.50}"
+    },
+    "raised": {
+      "$type": "color",
+      "$value": "{Global.color.white}"
+    },
+    "inverse": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.950}"
+    },
+    "disabled": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.100}"
+    },
+    "baseDark": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.900}"
+    },
+    "raisedDark": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.800}"
+    }
+  },
+  "text": {
+    "primary": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.950}"
+    },
+    "secondary": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.600}"
+    },
+    "muted": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.500}"
+    },
+    "inverse": {
+      "$type": "color",
+      "$value": "{Global.color.white}"
+    },
+    "disabled": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.400}"
+    },
+    "danger": {
+      "$type": "color",
+      "$value": "{Global.color.red.600}"
+    },
+    "primaryDark": {
+      "$type": "color",
+      "$value": "{Global.color.white}"
+    },
+    "secondaryDark": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.300}"
+    },
+    "mutedDark": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.400}"
+    }
+  },
+  "border": {
+    "default": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.200}"
+    },
+    "strong": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.300}"
+    },
+    "inverse": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.700}"
+    },
+    "focus": {
+      "$type": "color",
+      "$value": "{Global.color.blue.500}"
+    },
+    "danger": {
+      "$type": "color",
+      "$value": "{Global.color.red.500}"
+    },
+    "defaultDark": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.700}"
+    },
+    "strongDark": {
+      "$type": "color",
+      "$value": "{Global.color.zinc.600}"
+    }
+  },
+  "icon": {
+    "size": {
+      "sm": {
+        "$type": "dimension",
+        "$value": "16px"
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": "20px"
+      }
+    }
+  },
+  "control": {
+    "radius": {
+      "$type": "borderRadius",
+      "$value": "{Radius.lg}"
+    },
+    "height": {
+      "sm": {
+        "$type": "dimension",
+        "$value": "32px"
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": "36px"
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": "40px"
+      }
+    },
+    "padding": {
+      "inline": {
+        "$type": "dimension",
+        "$value": "{Spacing.space.3}"
+      },
+      "block": {
+        "$type": "dimension",
+        "$value": "{Spacing.space.2}"
+      }
+    }
+  },
+  "layout": {
+    "gap": {
+      "sm": {
+        "$type": "dimension",
+        "$value": "{Spacing.space.2}"
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": "{Spacing.space.3}"
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": "{Spacing.space.4}"
+      }
+    }
+  }
+}

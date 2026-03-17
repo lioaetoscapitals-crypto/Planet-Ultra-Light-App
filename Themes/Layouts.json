@@ -1,0 +1,88 @@
+{
+  "layout": {
+    "auth": {
+      "pageMaxWidth": {
+        "$type": "dimension",
+        "$value": "384px"
+      },
+      "contentGap": {
+        "$type": "dimension",
+        "$value": "{Spacing.space.8}"
+      },
+      "logoHeight": {
+        "$type": "dimension",
+        "$value": "24px"
+      },
+      "background": {
+        "light": {
+          "$type": "color",
+          "$value": "{Semantic.Light.semantic.background.canvas}"
+        },
+        "dark": {
+          "$type": "color",
+          "$value": "{Semantic.Dark.semantic.background.canvas}"
+        }
+      }
+    },
+    "sidebarLayout": {
+      "sidebarWidth": {
+        "$type": "dimension",
+        "$value": "256px"
+      },
+      "contentPadding": {
+        "$type": "dimension",
+        "$value": "{Spacing.space.6}"
+      },
+      "overscrollBackground": {
+        "lightMobile": {
+          "$type": "color",
+          "$value": "{Global.color.white}"
+        },
+        "lightDesktop": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.100}"
+        },
+        "darkMobile": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.900}"
+        },
+        "darkDesktop": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.950}"
+        }
+      }
+    },
+    "stackedLayout": {
+      "navbarHeight": {
+        "$type": "dimension",
+        "$value": "56px"
+      },
+      "mobileMenuWidth": {
+        "$type": "dimension",
+        "$value": "256px"
+      },
+      "contentPadding": {
+        "$type": "dimension",
+        "$value": "{Spacing.space.6}"
+      },
+      "overscrollBackground": {
+        "lightMobile": {
+          "$type": "color",
+          "$value": "{Global.color.white}"
+        },
+        "lightDesktop": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.100}"
+        },
+        "darkMobile": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.900}"
+        },
+        "darkDesktop": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.950}"
+        }
+      }
+    }
+  }
+}

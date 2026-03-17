@@ -1,0 +1,47 @@
+{
+  "none": {
+    "$name": "none",
+    "$type": "borderRadius",
+    "$value": "0px"
+  },
+  "xs": {
+    "$name": "xs",
+    "$type": "borderRadius",
+    "$value": "2px"
+  },
+  "sm": {
+    "$name": "sm",
+    "$type": "borderRadius",
+    "$value": "4px"
+  },
+  "md": {
+    "$name": "md",
+    "$type": "borderRadius",
+    "$value": "6px"
+  },
+  "lg": {
+    "$name": "lg",
+    "$type": "borderRadius",
+    "$value": "8px"
+  },
+  "xl": {
+    "$name": "xl",
+    "$type": "borderRadius",
+    "$value": "12px"
+  },
+  "2xl": {
+    "$name": "2xl",
+    "$type": "borderRadius",
+    "$value": "16px"
+  },
+  "3xl": {
+    "$name": "3xl",
+    "$type": "borderRadius",
+    "$value": "24px"
+  },
+  "full": {
+    "$name": "full",
+    "$type": "borderRadius",
+    "$value": "9999px"
+  }
+}
