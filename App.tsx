@@ -1,20 +1,13 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from "react";
+import AuthFlowScreen from "./src/screens/AuthFlowScreen";
+import PlanetScreen from "./src/screens/PlanetScreen";
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+  const [authenticated, setAuthenticated] = useState(false);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+  if (!authenticated) {
+    return <AuthFlowScreen onAuthenticated={() => setAuthenticated(true)} />;
+  }
+
+  return <PlanetScreen />;
+}
