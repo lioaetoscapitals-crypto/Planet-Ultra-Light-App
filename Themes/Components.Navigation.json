@@ -1,0 +1,144 @@
+{
+  "dropdown": {
+    "trigger": {
+      "radius": {
+        "$type": "borderRadius",
+        "$value": "{Radius.lg}"
+      }
+    },
+    "menu": {
+      "background": {
+        "$type": "color",
+        "$value": "{Components.Common.surface.raised}"
+      },
+      "border": {
+        "$type": "color",
+        "$value": "{Components.Common.border.default}"
+      },
+      "radius": {
+        "$type": "borderRadius",
+        "$value": "{Radius.xl}"
+      },
+      "shadow": {
+        "$type": "string",
+        "$value": "{Shadow.shadow.lg}"
+      },
+      "padding": {
+        "$type": "dimension",
+        "$value": "{Spacing.space.1}"
+      },
+      "minWidth": {
+        "sm": {
+          "$type": "dimension",
+          "$value": "256px"
+        },
+        "md": {
+          "$type": "dimension",
+          "$value": "320px"
+        }
+      }
+    },
+    "item": {
+      "height": {
+        "$type": "dimension",
+        "$value": "36px"
+      },
+      "iconSize": {
+        "$type": "dimension",
+        "$value": "{Components.Common.icon.size.sm}"
+      },
+      "background": {
+        "hover": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.50}"
+        }
+      },
+      "shortcutText": {
+        "$type": "color",
+        "$value": "{Components.Common.text.muted}"
+      },
+      "descriptionText": {
+        "$type": "color",
+        "$value": "{Components.Common.text.secondary}"
+      }
+    }
+  },
+  "navbar": {
+    "height": {
+      "$type": "dimension",
+      "$value": "56px"
+    },
+    "item": {
+      "radius": {
+        "$type": "borderRadius",
+        "$value": "{Radius.lg}"
+      },
+      "iconSize": {
+        "$type": "dimension",
+        "$value": "{Components.Button.button.icon.sizeNavigation}"
+      },
+      "background": {
+        "current": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.100}"
+        },
+        "hover": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.50}"
+        }
+      }
+    },
+    "logo": {
+      "mobile": {
+        "$type": "dimension",
+        "$value": "40px"
+      },
+      "desktop": {
+        "$type": "dimension",
+        "$value": "32px"
+      }
+    }
+  },
+  "sidebar": {
+    "width": {
+      "$type": "dimension",
+      "$value": "{Layouts.layout.sidebarLayout.sidebarWidth}"
+    },
+    "item": {
+      "height": {
+        "$type": "dimension",
+        "$value": "40px"
+      },
+      "radius": {
+        "$type": "borderRadius",
+        "$value": "{Radius.lg}"
+      },
+      "iconSize": {
+        "$type": "dimension",
+        "$value": "{Components.Button.button.icon.sizeNavigation}"
+      },
+      "background": {
+        "current": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.100}"
+        },
+        "hover": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.50}"
+        }
+      }
+    }
+  },
+  "pagination": {
+    "item": {
+      "size": {
+        "$type": "dimension",
+        "$value": "32px"
+      },
+      "radius": {
+        "$type": "borderRadius",
+        "$value": "{Radius.md}"
+      }
+    }
+  }
+}

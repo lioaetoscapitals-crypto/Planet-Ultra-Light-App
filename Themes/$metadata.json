@@ -1,0 +1,18 @@
+{
+  "tokenSetOrder": [
+    "Global",
+    "Radius",
+    "Typography",
+    "Spacing",
+    "Shadow",
+    "Semantic.Light",
+    "Semantic.Dark",
+    "Layouts",
+    "Components.Common",
+    "Components.Button",
+    "Components.Forms",
+    "Components.Navigation",
+    "Components.Overlay",
+    "Components.DataDisplay"
+  ]
+}

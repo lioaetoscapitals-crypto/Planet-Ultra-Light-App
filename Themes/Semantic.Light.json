@@ -1,0 +1,78 @@
+{
+  "semantic": {
+    "background": {
+      "canvas": {
+        "$type": "color",
+        "$value": "{Global.color.white}"
+      },
+      "subtle": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.50}"
+      },
+      "muted": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.100}"
+      },
+      "strong": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.950}"
+      }
+    },
+    "surface": {
+      "base": {
+        "$type": "color",
+        "$value": "{Global.color.white}"
+      },
+      "raised": {
+        "$type": "color",
+        "$value": "{Global.color.white}"
+      },
+      "sunken": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.50}"
+      },
+      "sidebar": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.100}"
+      }
+    },
+    "text": {
+      "primary": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.950}"
+      },
+      "secondary": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.600}"
+      },
+      "muted": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.500}"
+      },
+      "inverse": {
+        "$type": "color",
+        "$value": "{Global.color.white}"
+      }
+    },
+    "border": {
+      "default": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.200}"
+      },
+      "strong": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.300}"
+      },
+      "focus": {
+        "$type": "color",
+        "$value": "{Global.color.blue.500}"
+      }
+    },
+    "overlay": {
+      "backdrop": {
+        "$type": "color",
+        "$value": "rgba(9, 9, 11, 0.45)"
+      }
+    }
+  }
+}

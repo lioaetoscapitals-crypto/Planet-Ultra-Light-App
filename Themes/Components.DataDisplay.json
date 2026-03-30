@@ -1,0 +1,124 @@
+{
+  "avatar": {
+    "size": {
+      "sm": {
+        "$type": "dimension",
+        "$value": "24px"
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": "32px"
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": "40px"
+      }
+    },
+    "radius": {
+      "$type": "borderRadius",
+      "$value": "{Radius.lg}"
+    }
+  },
+  "badge": {
+    "radius": {
+      "$type": "borderRadius",
+      "$value": "{Radius.full}"
+    },
+    "background": {
+      "neutral": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.100}"
+      },
+      "success": {
+        "$type": "color",
+        "$value": "{Global.color.emerald.100}"
+      },
+      "warning": {
+        "$type": "color",
+        "$value": "{Global.color.amber.100}"
+      },
+      "danger": {
+        "$type": "color",
+        "$value": "{Global.color.red.100}"
+      }
+    },
+    "text": {
+      "neutral": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.700}"
+      },
+      "success": {
+        "$type": "color",
+        "$value": "{Global.color.emerald.700}"
+      },
+      "warning": {
+        "$type": "color",
+        "$value": "{Global.color.amber.700}"
+      },
+      "danger": {
+        "$type": "color",
+        "$value": "{Global.color.red.700}"
+      }
+    }
+  },
+  "heading": {
+    "text": {
+      "$type": "color",
+      "$value": "{Components.Common.text.primary}"
+    }
+  },
+  "text": {
+    "primary": {
+      "$type": "color",
+      "$value": "{Components.Common.text.primary}"
+    },
+    "secondary": {
+      "$type": "color",
+      "$value": "{Components.Common.text.secondary}"
+    }
+  },
+  "divider": {
+    "color": {
+      "$type": "color",
+      "$value": "{Components.Common.border.default}"
+    }
+  },
+  "descriptionList": {
+    "term": {
+      "text": {
+        "$type": "color",
+        "$value": "{Components.Common.text.secondary}"
+      }
+    },
+    "value": {
+      "text": {
+        "$type": "color",
+        "$value": "{Components.Common.text.primary}"
+      }
+    }
+  },
+  "table": {
+    "header": {
+      "text": {
+        "$type": "color",
+        "$value": "{Components.Common.text.secondary}"
+      }
+    },
+    "row": {
+      "border": {
+        "$type": "color",
+        "$value": "{Components.Common.border.default}"
+      },
+      "backgroundHover": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.50}"
+      }
+    },
+    "cell": {
+      "text": {
+        "$type": "color",
+        "$value": "{Components.Common.text.primary}"
+      }
+    }
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "label": {
+    "text": {
+      "$type": "color",
+      "$value": "{Components.Common.text.primary}"
+    }
+  },
+  "description": {
+    "text": {
+      "$type": "color",
+      "$value": "{Components.Common.text.secondary}"
+    }
+  },
+  "errorMessage": {
+    "text": {
+      "$type": "color",
+      "$value": "{Components.Common.text.danger}"
+    }
+  },
+  "field": {
+    "gap": {
+      "$type": "dimension",
+      "$value": "{Spacing.space.2}"
+    }
+  },
+  "input": {
+    "height": {
+      "$type": "dimension",
+      "$value": "{Components.Common.control.height.lg}"
+    },
+    "radius": {
+      "$type": "borderRadius",
+      "$value": "{Components.Common.control.radius}"
+    },
+    "background": {
+      "default": {
+        "$type": "color",
+        "$value": "{Components.Common.surface.base}"
+      },
+      "disabled": {
+        "$type": "color",
+        "$value": "{Components.Common.surface.disabled}"
+      }
+    },
+    "border": {
+      "default": {
+        "$type": "color",
+        "$value": "{Components.Common.border.default}"
+      },
+      "focus": {
+        "$type": "color",
+        "$value": "{Components.Common.border.focus}"
+      },
+      "invalid": {
+        "$type": "color",
+        "$value": "{Components.Common.border.danger}"
+      }
+    },
+    "text": {
+      "default": {
+        "$type": "color",
+        "$value": "{Components.Common.text.primary}"
+      },
+      "placeholder": {
+        "$type": "color",
+        "$value": "{Components.Common.text.muted}"
+      }
+    },
+    "icon": {
+      "size": {
+        "$type": "dimension",
+        "$value": "{Components.Common.icon.size.sm}"
+      }
+    }
+  },
+  "textarea": {
+    "minHeight": {
+      "$type": "dimension",
+      "$value": "96px"
+    },
+    "radius": {
+      "$type": "borderRadius",
+      "$value": "{Components.Common.control.radius}"
+    }
+  },
+  "select": {
+    "height": {
+      "$type": "dimension",
+      "$value": "{Components.Common.control.height.lg}"
+    },
+    "chevronSize": {
+      "$type": "dimension",
+      "$value": "{Components.Common.icon.size.sm}"
+    }
+  },
+  "combobox": {
+    "option": {
+      "height": {
+        "$type": "dimension",
+        "$value": "36px"
+      },
+      "background": {
+        "active": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.100}"
+        },
+        "selected": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.50}"
+        }
+      }
+    }
+  },
+  "listbox": {
+    "option": {
+      "height": {
+        "$type": "dimension",
+        "$value": "36px"
+      },
+      "iconSize": {
+        "$type": "dimension",
+        "$value": "{Components.Common.icon.size.sm}"
+      }
+    }
+  },
+  "checkbox": {
+    "size": {
+      "$type": "dimension",
+      "$value": "16px"
+    },
+    "radius": {
+      "$type": "borderRadius",
+      "$value": "{Radius.sm}"
+    },
+    "background": {
+      "checked": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.950}"
+      }
+    },
+    "border": {
+      "default": {
+        "$type": "color",
+        "$value": "{Components.Common.border.default}"
+      },
+      "checked": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.950}"
+      }
+    }
+  },
+  "radio": {
+    "size": {
+      "$type": "dimension",
+      "$value": "16px"
+    },
+    "dotSize": {
+      "$type": "dimension",
+      "$value": "6px"
+    },
+    "border": {
+      "default": {
+        "$type": "color",
+        "$value": "{Components.Common.border.default}"
+      },
+      "checked": {
+        "$type": "color",
+        "$value": "{Global.color.zinc.950}"
+      }
+    }
+  },
+  "switch": {
+    "track": {
+      "width": {
+        "$type": "dimension",
+        "$value": "36px"
+      },
+      "height": {
+        "$type": "dimension",
+        "$value": "20px"
+      },
+      "background": {
+        "off": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.300}"
+        },
+        "on": {
+          "$type": "color",
+          "$value": "{Global.color.zinc.950}"
+        }
+      }
+    },
+    "thumb": {
+      "size": {
+        "$type": "dimension",
+        "$value": "16px"
+      },
+      "background": {
+        "$type": "color",
+        "$value": "{Global.color.white}"
+      }
+    }
+  },
+  "fieldset": {
+    "gap": {
+      "$type": "dimension",
+      "$value": "{Spacing.space.4}"
+    },
+    "legend": {
+      "text": {
+        "$type": "color",
+        "$value": "{Components.Common.text.primary}"
+      }
+    }
+  }
+}

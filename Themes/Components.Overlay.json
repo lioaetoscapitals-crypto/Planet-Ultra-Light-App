@@ -1,0 +1,58 @@
+{
+  "alert": {
+    "radius": {
+      "$type": "borderRadius",
+      "$value": "{Radius.2xl}"
+    },
+    "background": {
+      "$type": "color",
+      "$value": "{Components.Common.surface.raised}"
+    },
+    "border": {
+      "$type": "color",
+      "$value": "{Components.Common.border.default}"
+    },
+    "shadow": {
+      "$type": "string",
+      "$value": "{Shadow.shadow.lg}"
+    }
+  },
+  "dialog": {
+    "radius": {
+      "$type": "borderRadius",
+      "$value": "{Radius.2xl}"
+    },
+    "background": {
+      "$type": "color",
+      "$value": "{Components.Common.surface.raised}"
+    },
+    "border": {
+      "$type": "color",
+      "$value": "{Components.Common.border.default}"
+    },
+    "backdrop": {
+      "$type": "color",
+      "$value": "rgba(24, 24, 27, 0.55)"
+    },
+    "shadow": {
+      "$type": "string",
+      "$value": "{Shadow.shadow.lg}"
+    }
+  },
+  "modal": {
+    "panelMaxWidth": {
+      "sm": {
+        "$type": "dimension",
+        "$value": "384px"
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": "448px"
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": "512px"
+      }
+    }
+  }
+}
