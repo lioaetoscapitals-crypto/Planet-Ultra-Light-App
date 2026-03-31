@@ -1,0 +1,319 @@
+{
+  "summary": {
+    "societies": 5,
+    "towers": 15,
+    "apartments": 600,
+    "users": 70,
+    "userApartments": 60,
+    "documents": 180,
+    "onboardingRequests": 60,
+    "admins": 5,
+    "notifications": 60
+  },
+  "sample": {
+    "societies": [
+      {
+        "id": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "name": "Planet Housing Society",
+        "city": "Pune",
+        "createdAt": "2026-03-31T03:15:54.299Z"
+      },
+      {
+        "id": "9da5f406-466d-41cb-9e34-539bc7f82dda",
+        "name": "Green Valley Residency",
+        "city": "Mumbai",
+        "createdAt": "2026-03-31T03:15:54.302Z"
+      },
+      {
+        "id": "53dda375-448b-4d0b-b8e4-ff5f95aae3f9",
+        "name": "Skyline Towers",
+        "city": "Bengaluru",
+        "createdAt": "2026-03-31T03:15:54.303Z"
+      }
+    ],
+    "apartments": [
+      {
+        "id": "0bf9e93e-90be-4fb4-8863-752108e4dbf8",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "towerId": "351701ce-c214-479c-a9a1-c21e6feaf419",
+        "unitNumber": "A-101",
+        "createdAt": "2026-03-31T03:15:54.299Z"
+      },
+      {
+        "id": "90045b28-16fb-478c-8e1b-ed36ccdfbc7a",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "towerId": "351701ce-c214-479c-a9a1-c21e6feaf419",
+        "unitNumber": "A-102",
+        "createdAt": "2026-03-31T03:15:54.299Z"
+      },
+      {
+        "id": "468d52f2-cfa6-4814-b6b0-8e379d37e77a",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "towerId": "351701ce-c214-479c-a9a1-c21e6feaf419",
+        "unitNumber": "A-103",
+        "createdAt": "2026-03-31T03:15:54.299Z"
+      },
+      {
+        "id": "0c25d4cc-1848-4622-8080-190beff541ce",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "towerId": "351701ce-c214-479c-a9a1-c21e6feaf419",
+        "unitNumber": "A-104",
+        "createdAt": "2026-03-31T03:15:54.299Z"
+      },
+      {
+        "id": "851fc943-4c77-47b9-994d-81676a901756",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "towerId": "351701ce-c214-479c-a9a1-c21e6feaf419",
+        "unitNumber": "A-105",
+        "createdAt": "2026-03-31T03:15:54.299Z"
+      },
+      {
+        "id": "7dcd2b36-3f9d-45be-be56-6be03f9a26f0",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "towerId": "351701ce-c214-479c-a9a1-c21e6feaf419",
+        "unitNumber": "A-106",
+        "createdAt": "2026-03-31T03:15:54.299Z"
+      }
+    ],
+    "users": [
+      {
+        "id": "4f3f02b3-b509-41f5-a85c-e39e1cd435fa",
+        "name": "Aarav Kulkarni",
+        "phone": "9810000000",
+        "role": "owner",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "status": "submitted",
+        "createdAt": "2026-03-31T06:15:54.302Z"
+      },
+      {
+        "id": "73010107-9dd6-48d9-ac20-a88bb5e4f0f6",
+        "name": "Isha Mehta",
+        "phone": "9810000001",
+        "role": "tenant",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "status": "approved",
+        "createdAt": "2026-03-31T06:16:54.302Z"
+      },
+      {
+        "id": "b7ce3e1c-6633-4b0b-881c-831b63c65d9e",
+        "name": "Neha Gupta",
+        "phone": "9810000002",
+        "role": "family",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "status": "under_review",
+        "createdAt": "2026-03-31T06:17:54.302Z"
+      },
+      {
+        "id": "588e63de-2351-4496-9531-3724c00fcd11",
+        "name": "Rohit Reddy",
+        "phone": "9810000003",
+        "role": "owner",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "status": "approved",
+        "createdAt": "2026-03-31T06:18:54.302Z"
+      },
+      {
+        "id": "0b3d1599-b8bd-483a-a106-f00b565cd609",
+        "name": "Kiran Nair",
+        "phone": "9810000004",
+        "role": "tenant",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "status": "under_review",
+        "createdAt": "2026-03-31T06:19:54.302Z"
+      },
+      {
+        "id": "40b2f987-bda9-445a-95a8-6b7c8f10ab18",
+        "name": "Vikram Kapoor",
+        "phone": "9810000005",
+        "role": "family",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "status": "submitted",
+        "createdAt": "2026-03-31T06:20:54.302Z"
+      },
+      {
+        "id": "c2f72f2e-78b8-4df6-81ff-39b323a9ed77",
+        "name": "Sara Sharma",
+        "phone": "9810000006",
+        "role": "owner",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "status": "under_review",
+        "createdAt": "2026-03-31T06:21:54.302Z"
+      },
+      {
+        "id": "83072b39-d532-4ead-b237-4378dc0d6225",
+        "name": "Anaya Patil",
+        "phone": "9810000007",
+        "role": "tenant",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "status": "rejected",
+        "createdAt": "2026-03-31T06:22:54.302Z",
+        "rejectionReason": "Document mismatch: police verification unclear."
+      }
+    ],
+    "requests": [
+      {
+        "id": "e69ee208-6c9c-4ad3-aeb2-1845500417e6",
+        "userId": "4f3f02b3-b509-41f5-a85c-e39e1cd435fa",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "apartmentId": "0bf9e93e-90be-4fb4-8863-752108e4dbf8",
+        "role": "owner",
+        "status": "submitted",
+        "createdAt": "2026-03-31T06:18:54.302Z",
+        "updatedAt": "2026-03-31T06:45:54.302Z"
+      },
+      {
+        "id": "8a7dcff2-b68c-4819-bcf2-e33ae33d9f6a",
+        "userId": "73010107-9dd6-48d9-ac20-a88bb5e4f0f6",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "apartmentId": "90045b28-16fb-478c-8e1b-ed36ccdfbc7a",
+        "role": "tenant",
+        "status": "approved",
+        "createdAt": "2026-03-31T06:19:54.302Z",
+        "updatedAt": "2026-03-31T06:46:54.302Z"
+      },
+      {
+        "id": "103addd1-b053-4004-a0da-b1af77d3f318",
+        "userId": "b7ce3e1c-6633-4b0b-881c-831b63c65d9e",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "apartmentId": "468d52f2-cfa6-4814-b6b0-8e379d37e77a",
+        "role": "family",
+        "status": "under_review",
+        "createdAt": "2026-03-31T06:20:54.302Z",
+        "updatedAt": "2026-03-31T06:47:54.302Z"
+      },
+      {
+        "id": "a4d149ff-783a-4223-981c-aa73733cdae0",
+        "userId": "588e63de-2351-4496-9531-3724c00fcd11",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "apartmentId": "0c25d4cc-1848-4622-8080-190beff541ce",
+        "role": "owner",
+        "status": "approved",
+        "createdAt": "2026-03-31T06:21:54.302Z",
+        "updatedAt": "2026-03-31T06:48:54.302Z"
+      },
+      {
+        "id": "426cb0e0-87d7-4aaf-b2ea-508996925c49",
+        "userId": "0b3d1599-b8bd-483a-a106-f00b565cd609",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "apartmentId": "851fc943-4c77-47b9-994d-81676a901756",
+        "role": "tenant",
+        "status": "under_review",
+        "createdAt": "2026-03-31T06:22:54.302Z",
+        "updatedAt": "2026-03-31T06:49:54.302Z"
+      },
+      {
+        "id": "90780fed-1793-447b-9011-abeb80e47cb4",
+        "userId": "40b2f987-bda9-445a-95a8-6b7c8f10ab18",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "apartmentId": "7dcd2b36-3f9d-45be-be56-6be03f9a26f0",
+        "role": "family",
+        "status": "submitted",
+        "createdAt": "2026-03-31T06:23:54.302Z",
+        "updatedAt": "2026-03-31T06:50:54.302Z"
+      },
+      {
+        "id": "6825b5ab-cb2e-48d7-8a5f-dcc06ea44ffe",
+        "userId": "c2f72f2e-78b8-4df6-81ff-39b323a9ed77",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "apartmentId": "300448b1-d91d-4c44-ab71-877a533f83f3",
+        "role": "owner",
+        "status": "under_review",
+        "createdAt": "2026-03-31T06:24:54.302Z",
+        "updatedAt": "2026-03-31T06:51:54.302Z"
+      },
+      {
+        "id": "76738eba-599e-4464-ad15-383215df8318",
+        "userId": "83072b39-d532-4ead-b237-4378dc0d6225",
+        "societyId": "ae9fca73-ee05-4c76-ab63-1eacfb463930",
+        "apartmentId": "bef02b04-707e-464f-9a12-1a67f17f5d9a",
+        "role": "tenant",
+        "status": "rejected",
+        "createdAt": "2026-03-31T06:25:54.302Z",
+        "updatedAt": "2026-03-31T06:52:54.302Z",
+        "rejectionReason": "Invalid uploaded govt_id image."
+      }
+    ],
+    "documents": [
+      {
+        "id": "47fdf198-e130-4d6f-96d7-5c7e56c6a285",
+        "userId": "4f3f02b3-b509-41f5-a85c-e39e1cd435fa",
+        "type": "sale_deed",
+        "fileUrl": "https://dummy-docs.com/sale_deed_A101.pdf",
+        "status": "approved",
+        "uploadedAt": "2026-03-31T07:45:54.302Z"
+      },
+      {
+        "id": "089f5fcb-ee7b-4bfe-beda-9ea8066cd0ed",
+        "userId": "4f3f02b3-b509-41f5-a85c-e39e1cd435fa",
+        "type": "index_2",
+        "fileUrl": "https://dummy-docs.com/index_2_A101.pdf",
+        "status": "approved",
+        "uploadedAt": "2026-03-31T07:47:54.302Z"
+      },
+      {
+        "id": "f8c0a13a-e382-4766-967a-1324e0b46a3a",
+        "userId": "4f3f02b3-b509-41f5-a85c-e39e1cd435fa",
+        "type": "govt_id",
+        "fileUrl": "https://dummy-docs.com/govt_id_4f3f02b3-b509-41f5-a85c-e39e1cd435fa.png",
+        "status": "approved",
+        "uploadedAt": "2026-03-31T07:48:54.302Z"
+      },
+      {
+        "id": "8106f400-e6e6-4344-bb3b-fb46b6fc933a",
+        "userId": "73010107-9dd6-48d9-ac20-a88bb5e4f0f6",
+        "type": "rent_agreement",
+        "fileUrl": "https://dummy-docs.com/rent_agreement_A102.pdf",
+        "status": "approved",
+        "uploadedAt": "2026-03-31T07:50:54.302Z"
+      },
+      {
+        "id": "bb8fd594-5eda-43f2-9566-932c6cdeb99e",
+        "userId": "73010107-9dd6-48d9-ac20-a88bb5e4f0f6",
+        "type": "police_verification",
+        "fileUrl": "https://dummy-docs.com/police_verification_A102.pdf",
+        "status": "approved",
+        "uploadedAt": "2026-03-31T07:51:54.302Z"
+      },
+      {
+        "id": "a8dd2c83-17b9-44da-bd6a-47eff5ea512d",
+        "userId": "73010107-9dd6-48d9-ac20-a88bb5e4f0f6",
+        "type": "govt_id",
+        "fileUrl": "https://dummy-docs.com/govt_id_73010107-9dd6-48d9-ac20-a88bb5e4f0f6.png",
+        "status": "approved",
+        "uploadedAt": "2026-03-31T07:52:54.302Z"
+      },
+      {
+        "id": "81d412d1-ef09-4c0f-971b-80dad18492b3",
+        "userId": "73010107-9dd6-48d9-ac20-a88bb5e4f0f6",
+        "type": "society_charge_receipt",
+        "fileUrl": "https://dummy-docs.com/society_charge_receipt_A102.pdf",
+        "status": "approved",
+        "uploadedAt": "2026-03-31T07:53:54.302Z"
+      },
+      {
+        "id": "a12cf677-7e60-42cb-80f5-55e0557162aa",
+        "userId": "b7ce3e1c-6633-4b0b-881c-831b63c65d9e",
+        "type": "reference_owner_id",
+        "fileUrl": "https://dummy-docs.com/reference_owner_db579788-1c5b-4eba-b874-a6ddc9e5bc38.pdf",
+        "status": "pending",
+        "uploadedAt": "2026-03-31T07:55:54.302Z"
+      },
+      {
+        "id": "11c1d365-229d-408e-967e-2295ab69f700",
+        "userId": "b7ce3e1c-6633-4b0b-881c-831b63c65d9e",
+        "type": "govt_id",
+        "fileUrl": "https://dummy-docs.com/govt_id_b7ce3e1c-6633-4b0b-881c-831b63c65d9e.png",
+        "status": "pending",
+        "uploadedAt": "2026-03-31T07:56:54.302Z"
+      },
+      {
+        "id": "6ac2b79e-7e85-4f7d-9000-6667bc450eb7",
+        "userId": "588e63de-2351-4496-9531-3724c00fcd11",
+        "type": "sale_deed",
+        "fileUrl": "https://dummy-docs.com/sale_deed_A104.pdf",
+        "status": "approved",
+        "uploadedAt": "2026-03-31T07:45:54.302Z"
+      }
+    ]
+  }
+}

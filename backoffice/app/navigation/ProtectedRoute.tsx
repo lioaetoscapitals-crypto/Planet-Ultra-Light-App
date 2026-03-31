@@ -7,7 +7,11 @@ type Props = {
 };
 
 export default function ProtectedRoute({ children }: Props) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="bo-page-loading">Validating session...</div>;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to={ROUTES.login} replace />;

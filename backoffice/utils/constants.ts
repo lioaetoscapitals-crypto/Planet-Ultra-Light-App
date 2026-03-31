@@ -3,7 +3,12 @@ export const APP_NAME = "Planet Backoffice";
 export const ROUTES = {
   login: "/login",
   dashboard: "/dashboard",
+  gate: "/gate",
+  invitations: "/invitations",
+  bookings: "/bookings",
+  notices: "/notices",
+  market: "/market",
   users: "/users",
-  analytics: "/analytics",
-  settings: "/settings"
+  apartments: "/apartments",
+  societies: "/societies"
 } as const;

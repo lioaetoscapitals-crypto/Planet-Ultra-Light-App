@@ -5,9 +5,13 @@ import { navItems } from "../navigation/routeConfig";
 import { ROUTES } from "../../utils/constants";
 
 function resolveTitle(pathname: string) {
+  if (pathname.startsWith(ROUTES.gate)) return "Gate";
+  if (pathname.startsWith(ROUTES.invitations)) return "Invitations";
+  if (pathname.startsWith(ROUTES.bookings)) return "Space Bookings";
+  if (pathname.startsWith(ROUTES.notices)) return "Notices";
+  if (pathname.startsWith(ROUTES.market)) return "Market";
   if (pathname.startsWith(ROUTES.users)) return "Users";
-  if (pathname.startsWith(ROUTES.analytics)) return "Analytics";
-  if (pathname.startsWith(ROUTES.settings)) return "Settings";
+  if (pathname.startsWith(ROUTES.apartments)) return "Apartments";
   return "Dashboard";
 }
 

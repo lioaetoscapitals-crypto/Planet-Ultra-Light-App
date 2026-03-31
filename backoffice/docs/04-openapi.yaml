@@ -1,0 +1,715 @@
+openapi: 3.0.3
+info:
+  title: Planet Ultra Resident Management API
+  version: 1.0.0
+  description: |
+    Production API baseline for mobile app + backoffice SaaS.
+servers:
+  - url: https://api.planetultra.app/v1
+tags:
+  - name: Auth
+  - name: Users
+  - name: Apartments
+  - name: Gate
+  - name: Invitations
+  - name: Bookings
+  - name: Notices
+  - name: Market
+security:
+  - bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login user and return JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Refreshed token response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke current refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: Logout response
+  /auth/logout-all:
+    post:
+      tags: [Auth]
+      summary: Revoke all user refresh tokens
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+      responses:
+        '200':
+          description: Logout all response
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - name: role
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserRole'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserStatus'
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
+    post:
+      tags: [Users]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateInput'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user detail
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    patch:
+      tags: [Users]
+      summary: Update user
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateInput'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{id}/assign-apartment:
+    post:
+      tags: [Users]
+      summary: Assign user to apartment
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [apartmentId, relationshipType]
+              properties:
+                apartmentId:
+                  type: string
+                relationshipType:
+                  type: string
+                  enum: [Owner, Tenant, FamilyMember, Staff]
+      responses:
+        '200':
+          description: Assignment completed
+  /apartments:
+    get:
+      tags: [Apartments]
+      summary: List apartments
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - name: occupancyStatus
+          in: query
+          schema:
+            $ref: '#/components/schemas/ApartmentOccupancyStatus'
+      responses:
+        '200':
+          description: Apartment list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedApartments'
+    post:
+      tags: [Apartments]
+      summary: Create apartment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApartmentCreateInput'
+      responses:
+        '201':
+          description: Apartment created
+  /apartments/{id}:
+    get:
+      tags: [Apartments]
+      summary: Get apartment detail
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Apartment detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Apartment'
+    patch:
+      tags: [Apartments]
+      summary: Update apartment
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApartmentUpdateInput'
+      responses:
+        '200':
+          description: Updated apartment
+  /gate-logs:
+    get:
+      tags: [Gate]
+      summary: List visitor gate logs
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - name: entryStatus
+          in: query
+          schema:
+            $ref: '#/components/schemas/GateStatus'
+      responses:
+        '200':
+          description: Gate log list
+    post:
+      tags: [Gate]
+      summary: Create gate log
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GateLogCreateInput'
+      responses:
+        '201':
+          description: Gate log created
+  /gate-logs/{id}/approve:
+    post:
+      tags: [Gate]
+      summary: Approve gate entry
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Approved
+  /gate-logs/{id}/reject:
+    post:
+      tags: [Gate]
+      summary: Reject gate entry
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Rejected
+  /gate-logs/{id}/entry:
+    post:
+      tags: [Gate]
+      summary: Mark visitor entered
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Entry marked
+  /gate-logs/{id}/exit:
+    post:
+      tags: [Gate]
+      summary: Mark visitor exited
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Exit marked
+  /invitations:
+    get:
+      tags: [Invitations]
+      summary: List invitations
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InvitationStatus'
+      responses:
+        '200':
+          description: Invitation list
+    post:
+      tags: [Invitations]
+      summary: Create invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationCreateInput'
+      responses:
+        '201':
+          description: Invitation created
+  /invitations/{id}/approve:
+    post:
+      tags: [Invitations]
+      summary: Approve invitation
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Invitation approved
+  /invitations/{id}/reject:
+    post:
+      tags: [Invitations]
+      summary: Reject invitation
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Invitation rejected
+  /bookings:
+    get:
+      tags: [Bookings]
+      summary: List bookings
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/BookingStatus'
+      responses:
+        '200':
+          description: Booking list
+    post:
+      tags: [Bookings]
+      summary: Create booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreateInput'
+      responses:
+        '201':
+          description: Booking created
+  /bookings/{id}/approve:
+    post:
+      tags: [Bookings]
+      summary: Approve booking
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Booking approved
+  /bookings/{id}/reject:
+    post:
+      tags: [Bookings]
+      summary: Reject booking
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Booking rejected
+  /bookings/{id}/cancel:
+    post:
+      tags: [Bookings]
+      summary: Cancel booking
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Booking cancelled
+  /notices:
+    get:
+      tags: [Notices]
+      summary: List notices
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/NoticeStatus'
+      responses:
+        '200':
+          description: Notice list
+    post:
+      tags: [Notices]
+      summary: Create notice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeCreateInput'
+      responses:
+        '201':
+          description: Notice created
+  /notices/{id}/publish:
+    post:
+      tags: [Notices]
+      summary: Publish notice
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Notice published
+  /notices/{id}/schedule:
+    post:
+      tags: [Notices]
+      summary: Schedule notice
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [publishAt]
+              properties:
+                publishAt:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Notice scheduled
+  /market-items:
+    get:
+      tags: [Market]
+      summary: List market items
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/MarketItemStatus'
+      responses:
+        '200':
+          description: Market items list
+    post:
+      tags: [Market]
+      summary: Create market item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketItemCreateInput'
+      responses:
+        '201':
+          description: Market item created
+  /market-items/{id}/approve:
+    post:
+      tags: [Market]
+      summary: Approve market item
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Market item approved
+  /market-items/{id}/reject:
+    post:
+      tags: [Market]
+      summary: Reject market item
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Market item rejected
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Search:
+      name: search
+      in: query
+      schema:
+        type: string
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    AuthResponse:
+      type: object
+      required: [accessToken, refreshToken, accessTokenExpiresAt, user]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        accessTokenExpiresAt:
+          type: string
+          format: date-time
+        expiresInSeconds:
+          type: integer
+        refreshExpiresInSeconds:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    LogoutRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    UserRole:
+      type: string
+      enum: [Admin, Manager, Security, Resident]
+    UserStatus:
+      type: string
+      enum: [Invited, Active, Suspended, Deactivated]
+    ApartmentOccupancyStatus:
+      type: string
+      enum: [Occupied, Vacant, Maintenance, Inactive]
+    GateStatus:
+      type: string
+      enum: [Pending, Approved, Rejected, Entered, Exited]
+    InvitationStatus:
+      type: string
+      enum: [Draft, Pending, Approved, Rejected, Used, Expired, Cancelled]
+    BookingStatus:
+      type: string
+      enum: [Draft, Pending, Approved, Rejected, Confirmed, Completed, Cancelled, NoShow]
+    NoticeStatus:
+      type: string
+      enum: [Draft, Scheduled, Published, Expired, Archived]
+    MarketItemStatus:
+      type: string
+      enum: [Draft, PendingApproval, Approved, Rejected, Active, Inactive, Archived]
+    User:
+      type: object
+      required: [id, fullName, email, role, status, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        role: { $ref: '#/components/schemas/UserRole' }
+        status: { $ref: '#/components/schemas/UserStatus' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    UserCreateInput:
+      type: object
+      required: [fullName, email, role]
+      properties:
+        fullName: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        role: { $ref: '#/components/schemas/UserRole' }
+        status: { $ref: '#/components/schemas/UserStatus' }
+    UserUpdateInput:
+      type: object
+      properties:
+        fullName: { type: string }
+        phone: { type: string }
+        status: { $ref: '#/components/schemas/UserStatus' }
+    Apartment:
+      type: object
+      required: [id, tower, unitNumber, floor, occupancyStatus, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        tower: { type: string }
+        unitNumber: { type: string }
+        floor: { type: integer }
+        occupancyStatus: { $ref: '#/components/schemas/ApartmentOccupancyStatus' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ApartmentCreateInput:
+      type: object
+      required: [tower, unitNumber, floor]
+      properties:
+        tower: { type: string }
+        unitNumber: { type: string }
+        floor: { type: integer }
+    ApartmentUpdateInput:
+      type: object
+      properties:
+        occupancyStatus: { $ref: '#/components/schemas/ApartmentOccupancyStatus' }
+    GateLogCreateInput:
+      type: object
+      required: [visitorName, visitorPhone, apartmentId, purpose]
+      properties:
+        visitorName: { type: string }
+        visitorPhone: { type: string }
+        apartmentId: { type: string }
+        invitationId: { type: string }
+        purpose: { type: string }
+    InvitationCreateInput:
+      type: object
+      required: [hostUserId, apartmentId, guestName, guestPhone, visitDate, timeSlot]
+      properties:
+        hostUserId: { type: string }
+        apartmentId: { type: string }
+        guestName: { type: string }
+        guestPhone: { type: string }
+        visitDate: { type: string, format: date }
+        timeSlot: { type: string }
+    BookingCreateInput:
+      type: object
+      required: [requesterUserId, apartmentId, spaceType, bookingDate, startTime, endTime]
+      properties:
+        requesterUserId: { type: string }
+        apartmentId: { type: string }
+        spaceType:
+          type: string
+          enum: [Community Hall, Co-Work Space, Gym, Pool, Court]
+        bookingDate: { type: string, format: date }
+        startTime: { type: string }
+        endTime: { type: string }
+    NoticeCreateInput:
+      type: object
+      required: [title, body, audience]
+      properties:
+        title: { type: string }
+        body: { type: string }
+        audience:
+          type: string
+          enum: [AllResidents, Tower, Custom]
+        towerScope: { type: string }
+        publishAt: { type: string, format: date-time }
+    MarketItemCreateInput:
+      type: object
+      required: [sellerUserId, title, description, category, price, quantity]
+      properties:
+        sellerUserId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        category: { type: string }
+        price: { type: number, minimum: 0 }
+        quantity: { type: integer, minimum: 0 }
+    PaginatedUsers:
+      type: object
+      required: [data, page, limit, total]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+    PaginatedApartments:
+      type: object
+      required: [data, page, limit, total]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Apartment'
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
