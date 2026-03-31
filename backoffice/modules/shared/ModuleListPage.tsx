@@ -151,7 +151,7 @@ export default function ModuleListPage({ moduleKey, baseRoute }: Props) {
   });
 
   return (
-    <PageContainer title={config.label} subtitle={config.subtitle ?? `${config.singularLabel} list view with filterable records.`}>
+    <PageContainer title={config.label} subtitle={config.subtitle ?? `${config.singularLabel} list view with filterable records.`} showHeader={false}>
       <Card>
         <div className="bo-toolbar">
           <div className="bo-list-filters">

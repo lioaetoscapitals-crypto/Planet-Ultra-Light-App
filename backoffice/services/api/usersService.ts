@@ -55,6 +55,19 @@ export const usersService = {
       societyId: string;
       phone: string;
       createdAt: string;
+      requiredDocuments?: Array<{
+        type: string;
+        uploaded: boolean;
+        status: string;
+        fileUrl?: string;
+      }>;
+      documents?: Array<{
+        id: string;
+        type: string;
+        status: string;
+        fileUrl: string;
+        uploadedAt: string;
+      }>;
     }>(`/admin/users/${id}`);
 
     const mappedRole: UserEntity["role"] =
@@ -75,6 +88,8 @@ export const usersService = {
       actions: "View | Edit | Settings",
       createdAt: response.createdAt,
       updatedAt: response.createdAt,
+      requiredDocuments: response.requiredDocuments ?? [],
+      documents: response.documents ?? [],
     };
   },
   async create(payload: Record<string, unknown>) {

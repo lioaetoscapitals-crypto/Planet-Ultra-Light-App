@@ -32,7 +32,7 @@ export default function ModuleDetailPage({ moduleKey, baseRoute }: Props) {
   };
 
   return (
-    <PageContainer title={`${config.singularLabel} Detail`} subtitle={`ID: ${id}`}>
+    <PageContainer title={`${config.singularLabel} Detail`} subtitle={`ID: ${id}`} showHeader={false}>
       <Card>
         <div className="bo-inline-actions">
           <Link to={baseRoute} className="bo-link-reset">

@@ -825,6 +825,20 @@ router.get("/admin/users/:id", (req, res) => {
   const apartmentLink = onboardingStore.userApartments.find((link) => link.userId === user.id);
   const apartment = apartmentLink ? onboardingStore.apartments.find((apt) => apt.id === apartmentLink.apartmentId) : null;
 
+  const documents = onboardingStore.documents.filter((doc) => doc.userId === user.id);
+  const requiredByRole: Record<string, DocumentType[]> = {
+    owner: ["sale_deed", "index_2", "govt_id"],
+    tenant: ["rent_agreement", "police_verification", "govt_id", "society_charge_receipt"],
+    family: ["reference_owner_id", "govt_id"],
+  };
+  const requiredTypes = requiredByRole[user.role] ?? [];
+  const requiredDocuments = requiredTypes.map((docType) => ({
+    type: docType,
+    uploaded: documents.some((doc) => doc.type === docType),
+    status: documents.find((doc) => doc.type === docType)?.status ?? "missing",
+    fileUrl: documents.find((doc) => doc.type === docType)?.fileUrl,
+  }));
+
   res.json({
     id: user.id,
     name: user.name,
@@ -834,6 +848,8 @@ router.get("/admin/users/:id", (req, res) => {
     societyId: user.societyId,
     phone: user.phone,
     createdAt: user.createdAt,
+    requiredDocuments,
+    documents,
   });
 });
 

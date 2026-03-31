@@ -76,7 +76,7 @@ export default function ModuleFormPage({ moduleKey, baseRoute }: Props) {
   };
 
   return (
-    <PageContainer title={title} subtitle={`${config.label} form workflow`}>
+    <PageContainer title={title} subtitle={`${config.label} form workflow`} showHeader={false}>
       <Card>
         <form className="bo-form" onSubmit={(event) => void handleSave(event)}>
           {config.formFields.map((field) => (
