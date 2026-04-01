@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useAuth from "../../hooks/useAuth";
+import useTheme from "../../hooks/useTheme";
 import Button from "./Button";
 import { societiesService } from "../../services/api";
 import { getSelectedSocietyId, setSelectedSocietyId } from "../../services/societySelection";
@@ -11,8 +12,11 @@ type Props = {
 
 export default function Header({ title }: Props) {
   const { user, logout, isLoading } = useAuth();
+  const { mode, setMode } = useTheme();
   const [societies, setSocieties] = useState<SocietyEntity[]>([]);
   const [selectedSocietyId, setSelectedSocietyIdState] = useState<string>("");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -35,6 +39,17 @@ export default function Header({ title }: Props) {
   const selectedSocietyName = useMemo(() => {
     return societies.find((society) => society.id === selectedSocietyId)?.name ?? "Select Society";
   }, [selectedSocietyId, societies]);
+
+  useEffect(() => {
+    const onPointerDown = (event: MouseEvent) => {
+      if (!profileRef.current) return;
+      if (!profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", onPointerDown);
+    return () => window.removeEventListener("mousedown", onPointerDown);
+  }, []);
 
   return (
     <header className="bo-header">
@@ -63,13 +78,31 @@ export default function Header({ title }: Props) {
             ))}
           </select>
         </div>
-        <div className="bo-header-user">
-          <span className="bo-header-user-name">{user?.name ?? "Admin"}</span>
-          <span className="bo-header-user-role">{user?.role ?? "Admin"}</span>
+        <div className="bo-profile" ref={profileRef}>
+          <button className="bo-profile-trigger" onClick={() => setProfileOpen((prev) => !prev)}>
+            <span className="bo-header-user-name">{user?.name ?? "Admin"}</span>
+            <span className="bo-header-user-role">{user?.role ?? "Admin"}</span>
+          </button>
+          {profileOpen ? (
+            <div className="bo-profile-menu">
+              <div className="bo-select-wrap">
+                <label htmlFor="bo-theme-select" className="bo-input-label">Theme</label>
+                <select
+                  id="bo-theme-select"
+                  className="bo-input bo-select"
+                  value={mode}
+                  onChange={(event) => setMode(event.target.value === "light" ? "light" : "dark")}
+                >
+                  <option value="dark">Dark</option>
+                  <option value="light">White</option>
+                </select>
+              </div>
+              <Button variant="secondary" onClick={() => void logout()} disabled={isLoading}>
+                Sign out
+              </Button>
+            </div>
+          ) : null}
         </div>
-        <Button variant="secondary" onClick={() => void logout()} disabled={isLoading}>
-          Sign out
-        </Button>
       </div>
     </header>
   );

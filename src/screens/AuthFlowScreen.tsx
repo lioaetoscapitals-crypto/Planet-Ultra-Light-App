@@ -13,6 +13,7 @@ import {
   NativeScrollEvent,
   useWindowDimensions
 } from "react-native";
+import PlanetSmartCityLogo from "../components/PlanetSmartCityLogo";
 
 type AuthStage = "onboarding" | "login" | "signup";
 
@@ -129,7 +130,7 @@ export default function AuthFlowScreen({ onAuthenticated }: AuthFlowScreenProps)
       <SafeAreaView style={styles.safeArea}>
         <LinearGradient colors={["#0B1020", "#181D33", "#2B2B4F"]} style={styles.gradient}>
           <View style={styles.brandWrap}>
-            <Text style={styles.brandText}>Ultra Planet</Text>
+            <PlanetSmartCityLogo compact width={202} />
           </View>
 
           <ScrollView
@@ -303,12 +304,6 @@ const styles = StyleSheet.create({
   brandWrap: {
     paddingTop: 8,
     alignItems: "center"
-  },
-  brandText: {
-    color: "#EBECFF",
-    fontFamily: "Noto Sans",
-    fontSize: 18,
-    fontWeight: "700"
   },
   onboardingScrollContent: {
     flexGrow: 1

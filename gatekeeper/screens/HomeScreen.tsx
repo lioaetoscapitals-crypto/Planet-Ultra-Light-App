@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { LargeButton } from "../components/LargeButton";
+import { PlanetSmartCityLogo } from "../components/PlanetSmartCityLogo";
 
 type Props = {
   onCreateEntry: () => void;
@@ -10,6 +11,7 @@ type Props = {
 export function HomeScreen({ onCreateEntry, onStatus, onGate }: Props) {
   return (
     <View style={styles.container}>
+      <PlanetSmartCityLogo compact width={206} />
       <Text style={styles.title}>Gatekeeper Console</Text>
       <Text style={styles.subtitle}>Fast visitor execution layer</Text>
       <View style={styles.actions}>
@@ -30,7 +32,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#FFFFFF",
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "800"
   },
   subtitle: {
