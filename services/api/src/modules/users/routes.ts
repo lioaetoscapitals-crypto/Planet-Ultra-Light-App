@@ -24,6 +24,11 @@ export const usersRouter = makeCrudRouter({
 });
 
 usersRouter.post("/:id/assign-apartment", (req, res) => {
+  const societyId = req.user?.societyId;
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
   const { apartmentId, relationshipType } = req.body as {
     apartmentId?: string;
     relationshipType?: "Owner" | "Tenant" | "FamilyMember" | "Staff";
@@ -31,6 +36,13 @@ usersRouter.post("/:id/assign-apartment", (req, res) => {
 
   if (!apartmentId || !relationshipType) {
     res.status(422).json({ message: "apartmentId and relationshipType are required" });
+    return;
+  }
+
+  const user = db.users.find((item) => item.id === req.params.id && item.societyId === societyId);
+  const apartment = db.apartments.find((item) => item.id === apartmentId && item.societyId === societyId);
+  if (!user || !apartment) {
+    res.status(404).json({ message: "User/apartment not found in your society" });
     return;
   }
 

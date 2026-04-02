@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Router } from "express";
+import type { Request } from "express";
 import { z } from "zod";
 import { db, apartmentUserMap } from "../../shared/store/db.js";
 import type { EntryApartmentStatus, OverallStatus } from "./types.js";
@@ -42,6 +43,10 @@ function canGatekeeper(reqRole: unknown): boolean {
 function canAdmin(reqRole: unknown): boolean {
   const r = role(reqRole);
   return r === "admin" || r === "manager";
+}
+
+function requireSocietyId(req: Request): string | null {
+  return req.user?.societyId ?? null;
 }
 
 function recomputeOverallStatus(entryId: string): OverallStatus {
@@ -109,6 +114,12 @@ router.post("/entries", (req, res) => {
     return;
   }
 
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
+
   applyTimeoutSweep();
   const parsed = createEntrySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -117,7 +128,7 @@ router.post("/entries", (req, res) => {
   }
 
   const apartmentIds = [...new Set(parsed.data.apartment_ids)];
-  const invalidApartment = apartmentIds.find((id) => !db.apartments.some((apartment) => apartment.id === id));
+  const invalidApartment = apartmentIds.find((id) => !db.apartments.some((apartment) => apartment.id === id && apartment.societyId === societyId));
   if (invalidApartment) {
     res.status(422).json({ message: `Unknown apartment_id: ${invalidApartment}` });
     return;
@@ -129,6 +140,7 @@ router.post("/entries", (req, res) => {
 
   const entry = {
     id: entryId,
+    societyId,
     createdBy: req.user?.id ?? "unknown",
     visitorName: parsed.data.visitor_name,
     visitorPhone: parsed.data.visitor_phone,
@@ -158,8 +170,11 @@ router.post("/entries", (req, res) => {
   const uniqueResidents = [...new Set(residentUsers)];
 
   for (const userId of uniqueResidents) {
+    const mappedUser = db.users.find((item) => item.id === userId);
+    if (!mappedUser || mappedUser.societyId !== societyId) continue;
     residentStore.notifications.push({
       id: randomUUID(),
+      societyId,
       userId,
       entryId,
       type: "approval_request",
@@ -186,12 +201,18 @@ router.get("/entries", (req, res) => {
     return;
   }
 
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
   applyTimeoutSweep();
   const status = req.query.status ? String(req.query.status) : null;
   const from = req.query.from ? new Date(String(req.query.from)).getTime() : null;
   const to = req.query.to ? new Date(String(req.query.to)).getTime() : null;
 
   const items = residentStore.visitorEntries.filter((entry) => {
+    if (entry.societyId !== societyId) return false;
     if (status && entry.overallStatus !== status) return false;
     const created = new Date(entry.createdAt).getTime();
     if (from && created < from) return false;
@@ -208,8 +229,13 @@ router.post("/entries/:id/check-in", (req, res) => {
     return;
   }
 
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
   applyTimeoutSweep();
-  const entry = residentStore.visitorEntries.find((item) => item.id === req.params.id);
+  const entry = residentStore.visitorEntries.find((item) => item.id === req.params.id && item.societyId === societyId);
   if (!entry) {
     res.status(404).json({ message: "Entry not found" });
     return;
@@ -233,6 +259,7 @@ router.post("/entries/:id/check-in", (req, res) => {
   if (!gateLog) {
     gateLog = {
       id: randomUUID(),
+      societyId,
       entryId: entry.id,
       checkInTime: nowIso,
       status: "checked_in",
@@ -257,7 +284,12 @@ router.post("/entries/:id/check-out", (req, res) => {
     return;
   }
 
-  const entry = residentStore.visitorEntries.find((item) => item.id === req.params.id);
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
+  const entry = residentStore.visitorEntries.find((item) => item.id === req.params.id && item.societyId === societyId);
   if (!entry) {
     res.status(404).json({ message: "Entry not found" });
     return;
@@ -277,7 +309,7 @@ router.post("/entries/:id/check-out", (req, res) => {
 
   let gateLog = residentStore.gateLogs.find((item) => item.entryId === entry.id);
   if (!gateLog) {
-    gateLog = { id: randomUUID(), entryId: entry.id };
+    gateLog = { id: randomUUID(), societyId, entryId: entry.id };
     residentStore.gateLogs.unshift(gateLog);
   }
   gateLog.checkInTime = gateLog.checkInTime ?? entry.checkedInAt;
@@ -298,6 +330,11 @@ router.get("/entries/pending", (req, res) => {
     return;
   }
 
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
   applyTimeoutSweep();
   const userId = req.user?.id ?? "";
   const userApartmentIds = apartmentUserMap
@@ -308,7 +345,7 @@ router.get("/entries/pending", (req, res) => {
     (item) => item.status === "pending" && userApartmentIds.includes(item.apartmentId),
   );
   const entryIds = [...new Set(pendingRows.map((row) => row.entryId))];
-  const items = residentStore.visitorEntries.filter((entry) => entryIds.includes(entry.id));
+  const items = residentStore.visitorEntries.filter((entry) => entryIds.includes(entry.id) && entry.societyId === societyId);
   res.json({ items, total: items.length });
 });
 
@@ -318,6 +355,11 @@ router.post("/entries/:id/respond", (req, res) => {
     return;
   }
 
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
   applyTimeoutSweep();
   const parsed = respondSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -325,7 +367,7 @@ router.post("/entries/:id/respond", (req, res) => {
     return;
   }
 
-  const entry = residentStore.visitorEntries.find((item) => item.id === req.params.id);
+  const entry = residentStore.visitorEntries.find((item) => item.id === req.params.id && item.societyId === societyId);
   if (!entry) {
     res.status(404).json({ message: "Entry not found" });
     return;
@@ -365,6 +407,7 @@ router.post("/entries/:id/respond", (req, res) => {
 
   residentStore.notifications.push({
     id: randomUUID(),
+    societyId,
     userId: entry.createdBy,
     entryId: entry.id,
     type: "update",
@@ -385,10 +428,15 @@ router.get("/admin/entries", (req, res) => {
     return;
   }
 
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
   applyTimeoutSweep();
   const status = req.query.status ? String(req.query.status) : null;
   const items = residentStore.visitorEntries
-    .filter((entry) => (status ? entry.overallStatus === status : true))
+    .filter((entry) => entry.societyId === societyId && (status ? entry.overallStatus === status : true))
     .map((entry) => {
       const gateLog = residentStore.gateLogs.find((log) => log.entryId === entry.id);
       const child = residentStore.entryApartments.filter((row) => row.entryId === entry.id);
@@ -411,8 +459,13 @@ router.get("/admin/entries/:id", (req, res) => {
     return;
   }
 
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
   applyTimeoutSweep();
-  const entry = residentStore.visitorEntries.find((item) => item.id === req.params.id);
+  const entry = residentStore.visitorEntries.find((item) => item.id === req.params.id && item.societyId === societyId);
   if (!entry) {
     res.status(404).json({ message: "Entry not found" });
     return;
@@ -437,6 +490,11 @@ router.patch("/admin/entries/:id", (req, res) => {
     res.status(403).json({ message: "Only admin/manager can override entries" });
     return;
   }
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
 
   const parsed = overrideSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -444,7 +502,7 @@ router.patch("/admin/entries/:id", (req, res) => {
     return;
   }
 
-  const entry = residentStore.visitorEntries.find((item) => item.id === req.params.id);
+  const entry = residentStore.visitorEntries.find((item) => item.id === req.params.id && item.societyId === societyId);
   if (!entry) {
     res.status(404).json({ message: "Entry not found" });
     return;
@@ -466,16 +524,22 @@ router.get("/admin/analytics", (req, res) => {
     return;
   }
 
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
   applyTimeoutSweep();
   const byDay = new Map<string, number>();
-  for (const entry of residentStore.visitorEntries) {
+  const scopedEntries = residentStore.visitorEntries.filter((entry) => entry.societyId === societyId);
+  for (const entry of scopedEntries) {
     const day = entry.createdAt.slice(0, 10);
     byDay.set(day, (byDay.get(day) ?? 0) + 1);
   }
 
-  const total = residentStore.visitorEntries.length;
-  const approved = residentStore.visitorEntries.filter((item) => item.overallStatus === "approved").length;
-  const rejected = residentStore.visitorEntries.filter((item) => item.overallStatus === "rejected").length;
+  const total = scopedEntries.length;
+  const approved = scopedEntries.filter((item) => item.overallStatus === "approved").length;
+  const rejected = scopedEntries.filter((item) => item.overallStatus === "rejected").length;
 
   res.json({
     total_entries: total,
@@ -485,12 +549,24 @@ router.get("/admin/analytics", (req, res) => {
   });
 });
 
-router.get("/apartments", (_req, res) => {
-  res.json({ items: db.apartments, total: db.apartments.length });
+router.get("/apartments", (req, res) => {
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
+  const items = db.apartments.filter((item) => item.societyId === societyId);
+  res.json({ items, total: items.length });
 });
 
-router.get("/users", (_req, res) => {
-  res.json({ items: db.users, total: db.users.length });
+router.get("/users", (req, res) => {
+  const societyId = requireSocietyId(req);
+  if (!societyId) {
+    res.status(401).json({ message: "society_id is required in auth context" });
+    return;
+  }
+  const items = db.users.filter((item) => item.societyId === societyId);
+  res.json({ items, total: items.length });
 });
 
 export { router as residentSystemRouter };

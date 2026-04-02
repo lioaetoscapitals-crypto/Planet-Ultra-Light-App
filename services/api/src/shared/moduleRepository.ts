@@ -4,14 +4,23 @@ import { makeId, nowIso } from "./utils.js";
 export class ModuleRepository<K extends keyof EntityMap> {
   constructor(private readonly rows: EntityMap[K][]) {}
 
-  list(params: { page: number; limit: number; search?: string; statusField?: string; statusValue?: string }) {
-    const { page, limit, search, statusField, statusValue } = params;
+  list(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    statusField?: string;
+    statusValue?: string;
+    societyField?: string;
+    societyValue?: string;
+  }) {
+    const { page, limit, search, statusField, statusValue, societyField, societyValue } = params;
     const searchText = search?.toLowerCase();
     const filtered = this.rows.filter((row) => {
       const textMatch =
         !searchText || Object.values(row).some((value) => String(value).toLowerCase().includes(searchText));
       const statusMatch = !statusField || !statusValue || String((row as Record<string, unknown>)[statusField]) === statusValue;
-      return textMatch && statusMatch;
+      const societyMatch = !societyField || !societyValue || String((row as Record<string, unknown>)[societyField]) === societyValue;
+      return textMatch && statusMatch && societyMatch;
     });
     const start = (page - 1) * limit;
     return {
@@ -39,5 +48,12 @@ export class ModuleRepository<K extends keyof EntityMap> {
     const next = { ...this.rows[idx], ...patch, updatedAt: nowIso() };
     this.rows[idx] = next;
     return next;
+  }
+
+  remove(id: string): EntityMap[K] | undefined {
+    const idx = this.rows.findIndex((row) => row.id === id);
+    if (idx < 0) return undefined;
+    const [removed] = this.rows.splice(idx, 1);
+    return removed;
   }
 }

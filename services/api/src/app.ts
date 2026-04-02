@@ -11,6 +11,7 @@ import { noticesRouter } from "./modules/notices/routes.js";
 import { marketRouter } from "./modules/market/routes.js";
 import { residentSystemRouter } from "./modules/resident-system/routes.js";
 import { onboardingRouter } from "./modules/onboarding/routes.js";
+import { notificationsRouter } from "./modules/notifications/routes.js";
 
 export const createApp = () => {
   const app = express();
@@ -30,10 +31,12 @@ export const createApp = () => {
   app.use("/v1/bookings", bookingsRouter);
   app.use("/v1/notices", noticesRouter);
   app.use("/v1/market-items", marketRouter);
+  app.use("/v1/notifications", notificationsRouter);
   app.use("/v1", onboardingRouter);
 
   // Resident Management API surface (new flow).
   app.use("/api/v1", residentSystemRouter);
+  app.use("/api/v1/notifications", notificationsRouter);
   // Compatibility mount so backoffice can read visitor entries via /v1 as well.
   app.use("/v1", residentSystemRouter);
 

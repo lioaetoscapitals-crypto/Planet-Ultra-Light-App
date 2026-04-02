@@ -10,6 +10,7 @@ export type OverallStatus =
 
 export type VisitorEntry = {
   id: string;
+  societyId: string;
   createdBy: string;
   visitorName: string;
   visitorPhone: string;
@@ -36,6 +37,7 @@ export type EntryApartment = {
 
 export type GateLog = {
   id: string;
+  societyId: string;
   entryId: string;
   checkInTime?: string;
   checkOutTime?: string;
@@ -44,6 +46,7 @@ export type GateLog = {
 
 export type Notification = {
   id: string;
+  societyId: string;
   userId: string;
   entryId: string;
   type: "approval_request" | "update";

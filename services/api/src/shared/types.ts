@@ -4,7 +4,20 @@ export type UserStatus = "Invited" | "Active" | "Suspended" | "Deactivated";
 export type ApartmentOccupancyStatus = "Occupied" | "Vacant" | "Maintenance" | "Inactive";
 export type GateStatus = "Pending" | "Approved" | "Rejected" | "Entered" | "Exited";
 export type InvitationStatus = "Draft" | "Pending" | "Approved" | "Rejected" | "Used" | "Expired" | "Cancelled";
-export type BookingStatus = "Draft" | "Pending" | "Approved" | "Rejected" | "Confirmed" | "Completed" | "Cancelled" | "NoShow";
+export type BookingStatus =
+  | "Draft"
+  | "Pending"
+  | "ToCheck"
+  | "Approved"
+  | "ToPay"
+  | "Online"
+  | "Rejected"
+  | "Refund"
+  | "Refunded"
+  | "Confirmed"
+  | "Completed"
+  | "Cancelled"
+  | "NoShow";
 export type NoticeStatus = "Draft" | "Scheduled" | "Published" | "Expired" | "Archived";
 export type MarketItemStatus = "Draft" | "PendingApproval" | "Approved" | "Rejected" | "Active" | "Inactive" | "Archived";
 
@@ -58,6 +71,7 @@ export type InvitationEntity = EntityBase & {
 export type BookingEntity = EntityBase & {
   requesterUserId: string;
   apartmentId: string;
+  authorName?: string;
   spaceType: "Community Hall" | "Co-Work Space" | "Gym" | "Pool" | "Court";
   eventType: string;
   visibility: "Public" | "Private";
@@ -65,6 +79,11 @@ export type BookingEntity = EntityBase & {
   bookingDate: string;
   startTime: string;
   endTime: string;
+  paymentLabel?: string;
+  paymentStatus?: "Unpaid" | "Paid" | "RefundInitiated" | "Refunded";
+  paymentMethod?: "InternalPA" | "Razorpay" | "Cash" | "BankTransfer";
+  coverImageUrl?: string;
+  rejectedReason?: string;
   status: BookingStatus;
   approvedByUserId?: string;
 };

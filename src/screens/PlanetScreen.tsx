@@ -1,14 +1,16 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Speech from "expo-speech";
 import { StatusBar } from "expo-status-bar";
+import DateTimePicker, { DateTimePickerAndroid, DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import Svg, { Circle, Path, Rect, SvgProps, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
 import {
   ActivityIndicator,
   Alert,
   Image,
   ImageSourcePropType,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -17,10 +19,18 @@ import {
   TextInput,
   View
 } from "react-native";
-import { BookingApiEntity, createBookingApi, listBookingsApi } from "../services/bookingsApi";
+import { BookingApiEntity, createBookingApi, listBookingsApi, updateBookingApi } from "../services/bookingsApi";
+import { AppNotificationApi, listResidentNotificationsApi, markNotificationReadApi } from "../services/notificationsApi";
+import ProfileScreen from "./ProfileScreen";
+import planetComponents from "../config/planet-components.json";
+import { useThemeStore } from "../store/themeStore";
+import { profileThemes } from "../theme/profileTheme";
+import ThemedBottomSheet, { BottomSheetOption } from "../components/common/ThemedBottomSheet";
+import ThemedInputBottomSheet from "../components/common/ThemedInputBottomSheet";
 
-type ScreenMode = "home" | "notifications" | "spaceList" | "spaceDetail" | "bookingForm" | "activities";
+type ScreenMode = "home" | "notifications" | "spaceList" | "spaceDetail" | "bookingForm" | "activities" | "activityDetail" | "profile";
 type ActivityScope = "all" | "my";
+type ActivityStatusFilter = "all" | "waiting" | "approved" | "declined";
 
 type ModuleCard = {
   id: string;
@@ -37,6 +47,7 @@ type NotificationItem = {
   title: string;
   body: string;
   time: string;
+  read?: boolean;
 };
 
 type SpaceItem = {
@@ -128,32 +139,7 @@ const modules: ModuleCard[] = [
   }
 ];
 
-const notifications: NotificationItem[] = [
-  {
-    id: "1",
-    title: "Water Supply Maintenance",
-    body: "Water supply will be paused in Tower A from 2:00 PM to 4:00 PM today.",
-    time: "10 min ago"
-  },
-  {
-    id: "2",
-    title: "Visitor Waiting at Gate 2",
-    body: "A guest for Flat A-102 is waiting for approval at the east gate.",
-    time: "25 min ago"
-  },
-  {
-    id: "3",
-    title: "Community Hall Booking Confirmed",
-    body: "Your booking for Community Hall on Sunday, 6:00 PM is confirmed.",
-    time: "1 hr ago"
-  },
-  {
-    id: "4",
-    title: "Resident Welfare Meeting",
-    body: "Monthly resident welfare meeting starts at 7:30 PM in the clubhouse lounge.",
-    time: "3 hr ago"
-  }
-];
+const defaultNotifications: NotificationItem[] = [];
 
 const spaces: SpaceItem[] = [
   {
@@ -290,7 +276,45 @@ const spaces: SpaceItem[] = [
   }
 ];
 
-const ACTIVITY_DATES = ["Today", "22", "23", "24", "25", "26"] as const;
+const activitiesUi = planetComponents.activities as {
+  tabs: Array<{ id: ActivityScope; label: string }>;
+  statusFilters: Array<{ id: ActivityStatusFilter; label: string }>;
+  dateChips: string[];
+  statusBadgeLabels: Record<"waiting" | "approved" | "declined", string>;
+};
+const ACTIVITY_DATES = activitiesUi.dateChips as Array<string>;
+const ACTIVITY_TIME_OPTIONS: BottomSheetOption[] = [
+  { id: "10:00 AM", label: "10:00 AM" },
+  { id: "2:00 PM", label: "2:00 PM" },
+  { id: "6:00 PM", label: "6:00 PM" },
+  { id: "7:30 PM", label: "7:30 PM" }
+];
+const EVENT_TYPE_OPTIONS: BottomSheetOption[] = [
+  { id: "Birthday", label: "Birthday" },
+  { id: "Meeting", label: "Meeting" },
+  { id: "Workshop", label: "Workshop" },
+  { id: "Cultural Event", label: "Cultural Event" }
+];
+const DURATION_OPTIONS: BottomSheetOption[] = [
+  { id: "1 Hour", label: "1 Hour" },
+  { id: "2 Hours", label: "2 Hours" },
+  { id: "Half Day", label: "Half Day" },
+  { id: "Full Day", label: "Full Day" }
+];
+const VISIBILITY_OPTIONS: BottomSheetOption[] = [
+  { id: "Public", label: "Public" },
+  { id: "Private", label: "Private" }
+];
+const REPEAT_OPTIONS: BottomSheetOption[] = [
+  { id: "None", label: "None" },
+  { id: "Daily", label: "Daily" },
+  { id: "Weekly", label: "Weekly" },
+  { id: "Monthly", label: "Monthly" }
+];
+const ACTIVITY_STATUS_OPTIONS: BottomSheetOption[] = activitiesUi.statusFilters.map((option) => ({
+  id: option.id,
+  label: option.label
+}));
 const DEFAULT_BOOKING_USER = "usr-res-001";
 const DEFAULT_BOOKING_APARTMENT = "apt-a-102";
 const DEFAULT_BOOKING_SOCIETY = "soc-001";
@@ -303,13 +327,23 @@ function mapSpaceToApiSpaceType(spaceId: string): "Community Hall" | "Co-Work Sp
   return "Court";
 }
 
+function mapApiSpaceTypeToSpaceId(spaceType: "Community Hall" | "Co-Work Space" | "Gym" | "Pool" | "Court"): string {
+  if (spaceType === "Community Hall") return "community-hall";
+  if (spaceType === "Co-Work Space") return "co-work-space";
+  if (spaceType === "Gym") return "gym";
+  if (spaceType === "Pool") return "swimming-pool";
+  return "basketball-court";
+}
+
 function parseDateForApi(value: string): string {
-  const exactDateMap: Record<string, string> = {
-    "12 Apr 2026": "2026-04-12",
-    "13 Apr 2026": "2026-04-13",
-    "14 Apr 2026": "2026-04-14"
-  };
-  return exactDateMap[value] ?? "2026-04-12";
+  if (!value || value === "Select Date") {
+    return new Date().toISOString().slice(0, 10);
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+  return parsed.toISOString().slice(0, 10);
 }
 
 function parseTimeRange(value: string): { startTime: string; endTime: string } {
@@ -319,10 +353,52 @@ function parseTimeRange(value: string): { startTime: string; endTime: string } {
   return { startTime: "10:00", endTime: "11:00" };
 }
 
+function formatDateForForm(value: string): string {
+  if (!value) {
+    return "Select Date";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Select Date";
+  }
+  return parsed.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function formatTimeForForm(value: string): string {
+  const map: Record<string, string> = {
+    "10:00": "10:00 AM",
+    "14:00": "2:00 PM",
+    "18:00": "6:00 PM"
+  };
+  return map[value] ?? "10:00 AM";
+}
+
+function parseFormDateToDate(value: string): Date {
+  if (!value || value === "Select Date") {
+    return new Date();
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date();
+  }
+  return parsed;
+}
+
 function toActivityStatus(status: string): "approved" | "declined" | "waiting" {
-  if (status === "Approved") return "approved";
+  if (status === "Pending" || status === "ToCheck" || status === "Draft") return "waiting";
+  if (status === "Approved" || status === "Online" || status === "Refunded" || status === "ToPay" || status === "Refund") {
+    return "approved";
+  }
   if (status === "Rejected" || status === "Cancelled") return "declined";
-  return "waiting";
+  return "approved";
+}
+
+function isRejectedStatus(status: string) {
+  return status === "Rejected" || status === "Cancelled";
 }
 
 function formatClockFrom24(value: string): string {
@@ -332,6 +408,37 @@ function formatClockFrom24(value: string): string {
   const suffix = hour >= 12 ? "PM" : "AM";
   const normalizedHour = hour % 12 === 0 ? 12 : hour % 12;
   return `${String(normalizedHour).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${suffix}`;
+}
+
+function formatRelativeTime(value: string): string {
+  const parsed = new Date(value).getTime();
+  if (!Number.isFinite(parsed)) {
+    return "Just now";
+  }
+  const diffMs = Math.max(0, Date.now() - parsed);
+  const diffMin = Math.floor(diffMs / (60 * 1000));
+  if (diffMin < 1) {
+    return "Just now";
+  }
+  if (diffMin < 60) {
+    return `${diffMin} min ago`;
+  }
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) {
+    return `${diffHours} hr ago`;
+  }
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} day ago`;
+}
+
+function mapNotificationApiItem(item: AppNotificationApi): NotificationItem {
+  return {
+    id: item.id,
+    title: item.title,
+    body: item.body,
+    time: formatRelativeTime(item.createdAt),
+    read: item.read
+  };
 }
 
 function buildActivityCards(bookings: BookingApiEntity[]): ActivityCard[] {
@@ -347,6 +454,9 @@ function buildActivityCards(bookings: BookingApiEntity[]): ActivityCard[] {
 }
 
 export default function PlanetScreen() {
+  const themeMode = useThemeStore((state) => state.mode);
+  const theme = profileThemes[themeMode];
+  const isLight = themeMode === "light";
   const [screenMode, setScreenMode] = useState<ScreenMode>("home");
   const [selectedSpaceId, setSelectedSpaceId] = useState(spaces[0].id);
   const [selectedSpaceGalleryIndex, setSelectedSpaceGalleryIndex] = useState(0);
@@ -362,10 +472,19 @@ export default function PlanetScreen() {
   const [visibility, setVisibility] = useState<"Select" | "Public" | "Private">("Select");
   const [message, setMessage] = useState("");
   const [bookingItems, setBookingItems] = useState<BookingApiEntity[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(defaultNotifications);
+  const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
   const [isActivitiesLoading, setIsActivitiesLoading] = useState(false);
+  const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
   const [activityScope, setActivityScope] = useState<ActivityScope>("all");
-  const [selectedActivityDate, setSelectedActivityDate] = useState<(typeof ACTIVITY_DATES)[number]>("Today");
+  const [activityStatusFilter, setActivityStatusFilter] = useState<ActivityStatusFilter>("all");
+  const [selectedActivityDate, setSelectedActivityDate] = useState<string>("Today");
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
+  const [activeSheet, setActiveSheet] = useState<
+    null | "statusFilter" | "eventType" | "time" | "duration" | "visibility" | "message"
+  >(null);
+  const [isIosDatePickerVisible, setIsIosDatePickerVisible] = useState(false);
   const [isVoiceAssistantActive, setIsVoiceAssistantActive] = useState(false);
   const [voiceReply, setVoiceReply] = useState("Tap a command and Planet App will respond.");
   const [selectedIndianVoice, setSelectedIndianVoice] = useState<string | undefined>(undefined);
@@ -374,6 +493,7 @@ export default function PlanetScreen() {
   const [availableIndianVoices, setAvailableIndianVoices] = useState<
     Array<{ identifier: string; name: string; language: string }>
   >([]);
+  const previousBookingsRef = useRef<Record<string, { status: string; reason?: string; updatedAt: string }>>({});
 
   const selectedSpace = spaces.find((space) => space.id === selectedSpaceId) ?? spaces[0];
   const selectedSpaceGallery = selectedSpace.gallerySources.length > 0 ? selectedSpace.gallerySources : [selectedSpace.imageSource];
@@ -386,11 +506,59 @@ export default function PlanetScreen() {
     ];
   const activityCards = useMemo(() => buildActivityCards(bookingItems), [bookingItems]);
   const filteredActivities = useMemo(() => {
-    if (activityScope === "my") {
-      return activityCards.filter((item) => item.owner === "my");
+    const byScope =
+      activityScope === "my"
+        ? activityCards.filter((item) => item.owner === "my")
+        : activityCards.filter((item) => item.visibility === "Public" || item.owner === "my");
+
+    if (activityStatusFilter === "all") {
+      return byScope;
     }
-    return activityCards.filter((item) => item.visibility === "Public" || item.owner === "my");
-  }, [activityCards, activityScope]);
+
+    return byScope.filter((item) => item.status === activityStatusFilter);
+  }, [activityCards, activityScope, activityStatusFilter]);
+  const selectedActivityBooking = useMemo(
+    () => bookingItems.find((item) => item.id === selectedActivityId) ?? null,
+    [bookingItems, selectedActivityId]
+  );
+  const activityDetailSpace = useMemo(
+    () =>
+      spaces.find((space) => {
+        if (!selectedActivityBooking) {
+          return false;
+        }
+        return space.id === mapApiSpaceTypeToSpaceId(selectedActivityBooking.spaceType);
+      }) ?? spaces[0],
+    [selectedActivityBooking]
+  );
+  const activeBottomSheetOptions = useMemo(() => {
+    if (activeSheet === "statusFilter") return ACTIVITY_STATUS_OPTIONS;
+    if (activeSheet === "eventType") return EVENT_TYPE_OPTIONS;
+    if (activeSheet === "time") return ACTIVITY_TIME_OPTIONS;
+    if (activeSheet === "duration") return DURATION_OPTIONS;
+    if (activeSheet === "visibility") return VISIBILITY_OPTIONS;
+    return [];
+  }, [activeSheet]);
+  const activeBottomSheetTitle = useMemo(() => {
+    if (activeSheet === "statusFilter") return "Filter Activity Status";
+    if (activeSheet === "eventType") return "Select Event Type";
+    if (activeSheet === "time") return "Select Time";
+    if (activeSheet === "duration") return "Select Duration";
+    if (activeSheet === "visibility") return "Select Visibility";
+    return "";
+  }, [activeSheet]);
+  const activeBottomSheetSelectedId = useMemo(() => {
+    if (activeSheet === "statusFilter") return activityStatusFilter;
+    if (activeSheet === "eventType") return eventType;
+    if (activeSheet === "time") return eventTime;
+    if (activeSheet === "duration") return eventDuration;
+    if (activeSheet === "visibility") return visibility;
+    return undefined;
+  }, [activeSheet, activityStatusFilter, eventDuration, eventTime, eventType, visibility]);
+  const unreadNotificationCount = useMemo(
+    () => notifications.filter((item) => !item.read).length,
+    [notifications]
+  );
 
   useEffect(() => {
     setSelectedSpaceGalleryIndex(0);
@@ -585,7 +753,53 @@ export default function PlanetScreen() {
     try {
       setIsActivitiesLoading(true);
       const response = await listBookingsApi();
+      const generatedNotifications: NotificationItem[] = [];
+      response.forEach((booking) => {
+        if (booking.requesterUserId !== DEFAULT_BOOKING_USER) {
+          return;
+        }
+        const previous = previousBookingsRef.current[booking.id];
+        if (!previous) {
+          return;
+        }
+        const changedToRejected = !isRejectedStatus(previous.status) && isRejectedStatus(booking.status);
+        const rejectReason = booking.rejectedReason?.trim();
+        if (changedToRejected && rejectReason) {
+          Alert.alert("Activity Rejected", `Your activity "${booking.eventType}" was rejected.\nReason: ${rejectReason}`);
+        }
+        const statusChanged = previous.status !== booking.status;
+        if (statusChanged) {
+          generatedNotifications.push({
+            id: `local-${booking.id}-${booking.updatedAt}`,
+            title: `Activity ${booking.status}`,
+            body:
+              booking.status === "Rejected" && rejectReason
+                ? `${booking.eventType} was rejected. Reason: ${rejectReason}`
+                : `${booking.eventType} status changed to ${booking.status}.`,
+            time: "Just now",
+            read: false
+          });
+        }
+      });
+      previousBookingsRef.current = response.reduce<Record<string, { status: string; reason?: string; updatedAt: string }>>(
+        (accumulator, booking) => {
+          accumulator[booking.id] = {
+            status: booking.status,
+            reason: booking.rejectedReason,
+            updatedAt: booking.updatedAt
+          };
+          return accumulator;
+        },
+        {}
+      );
       setBookingItems(response);
+      if (generatedNotifications.length > 0) {
+        setNotifications((previous) => {
+          const existingIds = new Set(previous.map((item) => item.id));
+          const incoming = generatedNotifications.filter((item) => !existingIds.has(item.id));
+          return incoming.length > 0 ? [...incoming, ...previous] : previous;
+        });
+      }
     } catch (error) {
       Alert.alert("Activities unavailable", error instanceof Error ? error.message : "Unable to load activities.");
     } finally {
@@ -593,20 +807,100 @@ export default function PlanetScreen() {
     }
   };
 
-  useEffect(() => {
-    void loadActivities();
-  }, []);
+  const loadNotifications = async () => {
+    try {
+      setIsNotificationsLoading(true);
+      const response = await listResidentNotificationsApi();
+      const apiItems = response.map(mapNotificationApiItem);
+      setNotifications((previous) => {
+        const merged = [...apiItems];
+        const existingIds = new Set(apiItems.map((item) => item.id));
+        previous.forEach((item) => {
+          if (!existingIds.has(item.id)) {
+            merged.push(item);
+          }
+        });
+        return merged;
+      });
+    } catch {
+      // Keep existing notification state if API is temporarily unavailable.
+    } finally {
+      setIsNotificationsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (screenMode !== "activities") {
-      return;
-    }
     void loadActivities();
     const timer = setInterval(() => {
       void loadActivities();
     }, 12000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    void loadNotifications();
+  }, []);
+
+  useEffect(() => {
+    if (screenMode !== "notifications") {
+      return;
+    }
+    void loadNotifications();
   }, [screenMode]);
+
+  const startEditActivity = (activityId: string) => {
+    const source = bookingItems.find((item) => item.id === activityId);
+    if (!source) {
+      Alert.alert("Unable to edit", "Activity record not found.");
+      return;
+    }
+    if (toActivityStatus(source.status) !== "waiting" || source.requesterUserId !== DEFAULT_BOOKING_USER) {
+      Alert.alert("Edit blocked", "Only your waiting activities can be edited.");
+      return;
+    }
+
+    setEditingBookingId(source.id);
+    setSelectedSpaceId(mapApiSpaceTypeToSpaceId(source.spaceType));
+    setEventType(source.eventType);
+    setEventDate(formatDateForForm(source.bookingDate));
+    setEventTime(formatTimeForForm(source.startTime));
+    setEventDuration("1 Hour");
+    setVisibility(source.visibility);
+    setMessage(source.message ?? "");
+    setScreenMode("bookingForm");
+  };
+
+  const openActivityDetails = (activityId: string) => {
+    setSelectedActivityId(activityId);
+    setScreenMode("activityDetail");
+  };
+
+  const onNativeDateSelected = (selectedDate: Date) => {
+    const formatted = selectedDate.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+    setEventDate(formatted);
+  };
+
+  const openNativeDatePicker = () => {
+    const pickerValue = parseFormDateToDate(eventDate);
+    if (Platform.OS === "android") {
+      DateTimePickerAndroid.open({
+        value: pickerValue,
+        mode: "date",
+        onChange: (event: DateTimePickerEvent, selectedDate?: Date) => {
+          if (event.type !== "set" || !selectedDate) {
+            return;
+          }
+          onNativeDateSelected(selectedDate);
+        }
+      });
+      return;
+    }
+    setIsIosDatePickerVisible(true);
+  };
 
   const handleBookSpace = async () => {
     if (eventType === "Select event type" || eventDate === "Select Date" || eventTime === "Select Time" || eventDuration === "Select Duration") {
@@ -620,20 +914,43 @@ export default function PlanetScreen() {
     setIsBookingSubmitting(true);
     try {
       const timeRange = parseTimeRange(eventTime);
-      const created = await createBookingApi({
-        societyId: DEFAULT_BOOKING_SOCIETY,
-        requesterUserId: DEFAULT_BOOKING_USER,
-        apartmentId: DEFAULT_BOOKING_APARTMENT,
-        eventType,
-        spaceType: mapSpaceToApiSpaceType(selectedSpace.id),
-        visibility,
-        message: message.trim() || undefined,
-        bookingDate: parseDateForApi(eventDate),
-        startTime: timeRange.startTime,
-        endTime: timeRange.endTime,
-        status: "Pending"
-      });
-      setBookingItems((previous) => [created, ...previous]);
+      if (editingBookingId) {
+        const existing = bookingItems.find((item) => item.id === editingBookingId);
+        if (!existing) {
+          throw new Error("Activity to edit was not found.");
+        }
+        const updated = await updateBookingApi(editingBookingId, {
+          societyId: DEFAULT_BOOKING_SOCIETY,
+          requesterUserId: DEFAULT_BOOKING_USER,
+          apartmentId: DEFAULT_BOOKING_APARTMENT,
+          eventType,
+          spaceType: mapSpaceToApiSpaceType(selectedSpace.id),
+          visibility,
+          message: message.trim() || undefined,
+          bookingDate: parseDateForApi(eventDate),
+          startTime: timeRange.startTime,
+          endTime: timeRange.endTime,
+          status: existing.status
+        });
+        setBookingItems((previous) => previous.map((item) => (item.id === updated.id ? updated : item)));
+      } else {
+        const created = await createBookingApi({
+          societyId: DEFAULT_BOOKING_SOCIETY,
+          requesterUserId: DEFAULT_BOOKING_USER,
+          apartmentId: DEFAULT_BOOKING_APARTMENT,
+          eventType,
+          spaceType: mapSpaceToApiSpaceType(selectedSpace.id),
+          visibility,
+          message: message.trim() || undefined,
+          bookingDate: parseDateForApi(eventDate),
+          startTime: timeRange.startTime,
+          endTime: timeRange.endTime,
+          status: "Pending"
+        });
+        setBookingItems((previous) => [created, ...previous]);
+      }
+
+      setEditingBookingId(null);
       setActivityScope("my");
       setSelectedActivityDate("Today");
       setScreenMode("activities");
@@ -645,43 +962,43 @@ export default function PlanetScreen() {
   };
 
   return (
-    <View style={styles.safeArea}>
-      <StatusBar style="light" />
-      <View style={styles.screen}>
+    <View style={[styles.safeArea, { backgroundColor: theme.screenBg }]}>
+      <StatusBar style={isLight ? "dark" : "light"} />
+      <View style={[styles.screen, { backgroundColor: theme.screenBg }]}>
         <View style={screenMode === "home" ? styles.pageInsetHome : styles.pageInset}>
           {screenMode === "home" ? (
-            <View style={styles.homeFrame}>
+            <View style={[styles.homeFrame, { backgroundColor: theme.screenBg }]}>
               <View style={styles.figmaHeader}>
                 <View style={styles.figmaHeaderLeft}>
-                  <Text style={styles.figmaGreeting}>{greetingText}</Text>
-                  <Text style={styles.figmaName}>Andrea</Text>
+                  <Text style={[styles.figmaGreeting, { color: theme.textMuted }]}>{greetingText}</Text>
+                  <Text style={[styles.figmaName, { color: theme.textPrimary }]}>Andrea</Text>
                   <View style={styles.figmaAddressRow}>
-                    <Text style={styles.figmaAddress}>A-102, Tanishq, Pune, India</Text>
-                    <ArrowDownIcon width={16} height={16} />
+                    <Text style={[styles.figmaAddress, { color: theme.textMuted }]}>A-102, Tanishq, Pune, India</Text>
+                    <ArrowDownIcon width={16} height={16} color={theme.textSecondary} />
                   </View>
                 </View>
 
                 <View style={styles.figmaHeaderRight}>
-                  <View style={styles.figmaWeatherChip}>
+                  <View style={[styles.figmaWeatherChip, { borderColor: theme.cardBorder, backgroundColor: theme.cardBg }]}>
                     <Text style={styles.weatherEmoji}>{weatherEmoji}</Text>
-                    <Text style={styles.figmaWeatherText}>
+                    <Text style={[styles.figmaWeatherText, { color: theme.textPrimary }]}>
                       {isWeatherLoading ? "..." : `${temperature} °C`}
                     </Text>
                   </View>
 
                   <Pressable
                     onPress={() => setScreenMode("notifications")}
-                    style={styles.figmaBellWrap}
+                    style={[styles.figmaBellWrap, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}
                   >
-                    <BellIcon width={24} height={24} />
+                    <BellIcon width={24} height={24} color={theme.textSecondary} />
                     <View style={styles.figmaBadge}>
-                      <Text style={styles.figmaBadgeText}>{notifications.length}</Text>
+                      <Text style={styles.figmaBadgeText}>{unreadNotificationCount}</Text>
                     </View>
                   </Pressable>
 
-                  <View style={styles.figmaAvatar}>
+                  <Pressable style={styles.figmaAvatar} onPress={() => setScreenMode("profile")}>
                     <Text style={styles.figmaAvatarInitial}>A</Text>
-                  </View>
+                  </Pressable>
                 </View>
               </View>
 
@@ -719,7 +1036,7 @@ export default function PlanetScreen() {
           ) : screenMode === "spaceList" ? (
             <View style={styles.flowScreen}>
               <FlowHeader title="Space Booking" onBack={() => setScreenMode("home")} />
-              <View style={styles.listCardWrap}>
+              <View style={[styles.listCardWrap, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
                 <View style={styles.spaceGrid}>
                   {spaces.map((space) => (
                     <Pressable
@@ -739,7 +1056,7 @@ export default function PlanetScreen() {
                   ))}
                 </View>
               </View>
-              <Text style={styles.helpCopy}>
+              <Text style={[styles.helpCopy, { color: theme.textMuted }]}>
                 Press the mic and mention all your booking details like event date, time, duration,
                 repeat and occasion.
               </Text>
@@ -749,14 +1066,14 @@ export default function PlanetScreen() {
             </View>
           ) : screenMode === "spaceDetail" ? (
             <ScrollView
-              style={styles.flowScreen}
+              style={[styles.flowScreen, { backgroundColor: theme.screenBg }]}
               contentContainerStyle={styles.detailScrollContent}
               showsVerticalScrollIndicator={false}
               bounces={false}
             >
               <FlowHeader title="Select Space" onBack={() => setScreenMode("spaceList")} />
 
-              <View style={styles.detailHeroCard}>
+              <View style={[styles.detailHeroCard, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
                 <View style={[styles.detailHeroImage, { backgroundColor: selectedSpace.background }]}>
                   <Image source={selectedSpaceGalleryImage} style={styles.detailHeroImageAsset} resizeMode="cover" />
                 </View>
@@ -775,80 +1092,97 @@ export default function PlanetScreen() {
                     </Pressable>
                   ))}
                 </View>
-                <Text style={styles.detailSpaceTitle}>{selectedSpace.title}</Text>
+                <Text style={[styles.detailSpaceTitle, { color: theme.textPrimary }]}>{selectedSpace.title}</Text>
               </View>
 
-              <View style={styles.detailPriceCard}>
-                <Text style={styles.detailSectionTitle}>Prezzo come per profilo utente</Text>
+              <View style={[styles.detailPriceCard, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
+                <Text style={[styles.detailSectionTitle, { color: theme.textPrimary }]}>Prezzo come per profilo utente</Text>
                 <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>Residente:</Text>
-                  <Text style={styles.priceValue}>{selectedSpace.priceResident ?? "₹ 130 / Day"}</Text>
+                  <Text style={[styles.priceLabel, { color: theme.textSecondary }]}>Residente:</Text>
+                  <Text style={[styles.priceValue, { color: theme.textPrimary }]}>{selectedSpace.priceResident ?? "₹ 130 / Day"}</Text>
                 </View>
                 <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>Membro:</Text>
-                  <Text style={styles.priceValue}>{selectedSpace.priceMember ?? "₹ 90 / Day"}</Text>
+                  <Text style={[styles.priceLabel, { color: theme.textSecondary }]}>Membro:</Text>
+                  <Text style={[styles.priceValue, { color: theme.textPrimary }]}>{selectedSpace.priceMember ?? "₹ 90 / Day"}</Text>
                 </View>
-                <Text style={styles.detailMutedText}>{selectedSpace.subtitle}</Text>
+                <Text style={[styles.detailMutedText, { color: theme.textMuted }]}>{selectedSpace.subtitle}</Text>
               </View>
 
-              <View style={styles.detailInfoCard}>
-                <Text style={styles.detailInfoTitle}>Multi Purpose Room</Text>
-                <Text style={styles.detailLocation}>{selectedSpace.location}</Text>
-                <Text style={styles.detailLargePrice}>{selectedSpace.price ?? "₹ 400 / Day"}</Text>
-                <Text style={styles.detailDescription}>{selectedSpace.description}</Text>
+              <View style={[styles.detailInfoCard, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
+                <Text style={[styles.detailInfoTitle, { color: theme.textPrimary }]}>Multi Purpose Room</Text>
+                <Text style={[styles.detailLocation, { color: theme.textMuted }]}>{selectedSpace.location}</Text>
+                <Text style={[styles.detailLargePrice, { color: theme.textPrimary }]}>{selectedSpace.price ?? "₹ 400 / Day"}</Text>
+                <Text style={[styles.detailDescription, { color: theme.textSecondary }]}>{selectedSpace.description}</Text>
               </View>
             </ScrollView>
           ) : screenMode === "bookingForm" ? (
             <ScrollView
-              style={styles.flowScreen}
+              style={[styles.flowScreen, { backgroundColor: theme.screenBg }]}
               contentContainerStyle={styles.formScrollContent}
               showsVerticalScrollIndicator={false}
               bounces={false}
             >
-              <FlowHeader title="Select Space" onBack={() => setScreenMode("spaceDetail")} />
+              <FlowHeader title="Select Space" onBack={() => {
+                setEditingBookingId(null);
+                setScreenMode("spaceDetail");
+              }} />
 
-              <View style={styles.bookingSelectedCard}>
+              <View style={[styles.bookingSelectedCard, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
                 <View style={[styles.bookingSelectedImage, { backgroundColor: selectedSpace.background }]}>
                   <Image source={selectedSpaceGalleryImage} style={styles.bookingSelectedImageAsset} resizeMode="cover" />
                 </View>
                 <View style={styles.bookingSelectedRow}>
-                  <Text style={styles.bookingSelectedTitle}>{selectedSpace.title}</Text>
-                  <Text style={styles.bookingSelectedPrice}>{selectedSpace.price ?? "₹ 400 / Day"}</Text>
+                  <Text style={[styles.bookingSelectedTitle, { color: theme.textPrimary }]}>{selectedSpace.title}</Text>
+                  <Text style={[styles.bookingSelectedPrice, { color: theme.textPrimary }]}>{selectedSpace.price ?? "₹ 400 / Day"}</Text>
                 </View>
-                <Text style={styles.bookingSelectedLocation}>{selectedSpace.location}</Text>
+                <Text style={[styles.bookingSelectedLocation, { color: theme.textMuted }]}>{selectedSpace.location}</Text>
               </View>
 
-              <View style={styles.bookingFormCard}>
+              <View style={[styles.bookingFormCard, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
                 <FormPickerRow
                   label="Event type"
                   value={eventType}
-                  onPress={() => setEventType(nextOption(eventType, ["Select event type", "Birthday", "Meeting", "Workshop"]))}
+                  onPress={() => setActiveSheet("eventType")}
                 />
                 <FormPickerRow
                   label="On"
                   value={eventDate}
-                  onPress={() => setEventDate(nextOption(eventDate, ["Select Date", "12 Apr 2026", "13 Apr 2026", "14 Apr 2026"]))}
+                  onPress={openNativeDatePicker}
                 />
                 <FormPickerRow
                   label="At"
                   value={eventTime}
-                  onPress={() => setEventTime(nextOption(eventTime, ["Select Time", "10:00 AM", "2:00 PM", "6:00 PM"]))}
+                  onPress={() => setActiveSheet("time")}
                 />
                 <FormPickerRow
                   label="Duration"
                   value={eventDuration}
-                  onPress={() => setEventDuration(nextOption(eventDuration, ["Select Duration", "1 Hour", "2 Hours", "Half Day"]))}
+                  onPress={() => setActiveSheet("duration")}
                 />
 
                 <View style={styles.repeatSection}>
-                  <Text style={styles.formFieldLabel}>Repeat</Text>
-                  <View style={styles.repeatOptions}>
-                    {["None", "Daily", "Weekly", "Monthly"].map((option) => (
-                      <Pressable key={option} onPress={() => setRepeatMode(option)} style={styles.repeatOption}>
-                        <View style={[styles.radioOuter, repeatMode === option && styles.radioOuterActive]}>
-                          {repeatMode === option ? <View style={styles.radioInner} /> : null}
-                        </View>
-                        <Text style={styles.repeatOptionText}>{option}</Text>
+                  <Text style={[styles.formFieldLabel, { color: theme.textSecondary }]}>Repeat</Text>
+                  <View style={styles.repeatGrid}>
+                    {REPEAT_OPTIONS.map((option) => (
+                      <Pressable
+                        key={option.id}
+                        onPress={() => setRepeatMode(option.id)}
+                        style={[
+                          styles.repeatGridItem,
+                          {
+                            backgroundColor: repeatMode === option.id ? theme.primaryButtonBg : theme.elevatedBg,
+                            borderColor: repeatMode === option.id ? theme.primaryButtonBg : theme.cardBorder
+                          }
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.repeatGridItemText,
+                            { color: repeatMode === option.id ? theme.primaryButtonText : theme.textPrimary }
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
                       </Pressable>
                     ))}
                   </View>
@@ -857,22 +1191,18 @@ export default function PlanetScreen() {
                 <FormPickerRow
                   label="Visibility"
                   value={visibility}
-                  onPress={() => setVisibility(nextOption(visibility, ["Select", "Public", "Private"]) as "Select" | "Public" | "Private")}
+                  onPress={() => setActiveSheet("visibility")}
                 />
 
-                <Text style={styles.formFieldLabel}>Message</Text>
-                <TextInput
-                  value={message}
-                  onChangeText={setMessage}
-                  placeholder="Write Message"
-                  placeholderTextColor="#9AA4C0"
-                  style={styles.messageInput}
-                  multiline
+                <FormPickerRow
+                  label="Message"
+                  value={message.trim() ? "Message added" : "Add message"}
+                  onPress={() => setActiveSheet("message")}
                 />
               </View>
             </ScrollView>
           ) : screenMode === "activities" ? (
-            <View style={styles.activitiesScreen}>
+            <View style={[styles.activitiesScreen, { backgroundColor: theme.screenBg }]}>
               <View style={styles.flowHeader}>
                 <Pressable onPress={() => setScreenMode("spaceList")} style={styles.flowBackButton}>
                   <Text style={styles.flowBackButtonText}>‹</Text>
@@ -882,30 +1212,28 @@ export default function PlanetScreen() {
 
               <View style={styles.activitiesToolbar}>
                 <View style={styles.activitiesSegmented}>
-                  <Pressable
-                    style={[styles.activitiesSegmentButton, activityScope === "all" && styles.activitiesSegmentButtonActive]}
-                    onPress={() => setActivityScope("all")}
-                  >
-                    <Text style={[styles.activitiesSegmentText, activityScope === "all" && styles.activitiesSegmentTextActive]}>
-                      All Activities
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.activitiesSegmentButton, activityScope === "my" && styles.activitiesSegmentButtonActive]}
-                    onPress={() => setActivityScope("my")}
-                  >
-                    <Text style={[styles.activitiesSegmentText, activityScope === "my" && styles.activitiesSegmentTextActive]}>
-                      My Activities
-                    </Text>
-                  </Pressable>
+                  {activitiesUi.tabs.map((tab) => (
+                    <Pressable
+                      key={tab.id}
+                      style={[styles.activitiesSegmentButton, activityScope === tab.id && styles.activitiesSegmentButtonActive]}
+                      onPress={() => setActivityScope(tab.id)}
+                    >
+                      <Text style={[styles.activitiesSegmentText, activityScope === tab.id && styles.activitiesSegmentTextActive]}>
+                        {tab.label}
+                      </Text>
+                    </Pressable>
+                  ))}
                 </View>
-                <Pressable style={styles.activitiesFilterButton}>
-                  <FilterIcon width={24} height={24} />
+                <Pressable
+                  style={styles.activitiesFilterButton}
+                  onPress={() => setActiveSheet("statusFilter")}
+                >
+                  <FilterIcon width={20} height={20} color={theme.textSecondary} />
                 </Pressable>
               </View>
 
               <View style={styles.activitiesDatesRow}>
-                <ClockFastForwardIcon width={24} height={24} />
+                <ClockFastForwardIcon width={24} height={24} color={theme.textSecondary} />
                 {ACTIVITY_DATES.map((dateItem) => (
                   <Pressable
                     key={dateItem}
@@ -927,16 +1255,16 @@ export default function PlanetScreen() {
                 ))}
               </View>
 
-              <View style={styles.activitiesPanel}>
+              <View style={[styles.activitiesPanel, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
                 {isActivitiesLoading ? (
                   <View style={styles.activitiesLoaderWrap}>
                     <ActivityIndicator size="small" color="#A1C5F8" />
-                    <Text style={styles.activitiesLoaderText}>Loading activities...</Text>
+                    <Text style={[styles.activitiesLoaderText, { color: theme.textSecondary }]}>Loading activities...</Text>
                   </View>
                 ) : filteredActivities.length === 0 ? (
                   <View style={styles.activitiesEmptyWrap}>
-                    <Text style={styles.activitiesEmptyTitle}>No activities found</Text>
-                    <Text style={styles.activitiesEmptyText}>Book a space to create your first activity request.</Text>
+                    <Text style={[styles.activitiesEmptyTitle, { color: theme.textPrimary }]}>No activities found</Text>
+                    <Text style={[styles.activitiesEmptyText, { color: theme.textMuted }]}>Book a space to create your first activity request.</Text>
                   </View>
                 ) : (
                   <ScrollView
@@ -945,35 +1273,82 @@ export default function PlanetScreen() {
                     bounces={false}
                   >
                     {filteredActivities.map((activity) => (
-                      <View key={activity.id} style={styles.activityCard}>
+                      <Pressable
+                        key={activity.id}
+                        style={[styles.activityCard, isLight && { backgroundColor: theme.elevatedBg, borderColor: theme.cardBorder }]}
+                        onPress={() => openActivityDetails(activity.id)}
+                      >
                         <View style={styles.activityIconCircle}>
                           <Text style={styles.activityIconText}>{activity.category.slice(0, 1)}</Text>
                         </View>
                         <View style={styles.activityBody}>
                           <View style={styles.activityTopRow}>
-                            <Text style={styles.activityTitle} numberOfLines={1}>
+                            <Text style={[styles.activityTitle, { color: theme.textPrimary }]} numberOfLines={1}>
                               {activity.title}
                             </Text>
                             <ActivityStatusBadge status={activity.status} />
                           </View>
                           <View style={styles.activityBottomRow}>
-                            <Text style={styles.activityCategory}>{activity.category}</Text>
+                            <Text style={[styles.activityCategory, { color: theme.textMuted }]}>{activity.category}</Text>
                             <View style={styles.activityTimeRow}>
                               <ClockIcon width={16} height={16} />
-                              <Text style={styles.activityTime}>{activity.time}</Text>
+                              <Text style={[styles.activityTime, { color: theme.textPrimary }]}>{activity.time}</Text>
                             </View>
                           </View>
                         </View>
-                      </View>
+                      </Pressable>
                     ))}
                   </ScrollView>
                 )}
               </View>
             </View>
+          ) : screenMode === "activityDetail" ? (
+            <View style={[styles.flowScreen, { backgroundColor: theme.screenBg }]}>
+              <FlowHeader title="Activity Details" onBack={() => setScreenMode("activities")} />
+              {selectedActivityBooking ? (
+                <View style={[styles.activityDetailCard, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
+                  <View style={styles.activityDetailHeroWrap}>
+                    <Image
+                      source={activityDetailSpace.imageSource}
+                      style={styles.activityDetailHeroImage}
+                      resizeMode="cover"
+                    />
+                    <Text style={[styles.activityDetailTitle, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">
+                      {selectedActivityBooking.eventType}
+                    </Text>
+                  </View>
+                  <Text style={[styles.activityDetailMeta, { color: theme.textSecondary }]}>Space: {selectedActivityBooking.spaceType}</Text>
+                  <Text style={[styles.activityDetailMeta, { color: theme.textSecondary }]}>Date: {selectedActivityBooking.bookingDate}</Text>
+                  <Text style={[styles.activityDetailMeta, { color: theme.textSecondary }]}>
+                    Time: {formatClockFrom24(selectedActivityBooking.startTime)} - {formatClockFrom24(selectedActivityBooking.endTime)}
+                  </Text>
+                  <Text style={[styles.activityDetailMeta, { color: theme.textSecondary }]}>Visibility: {selectedActivityBooking.visibility}</Text>
+                  <Text style={[styles.activityDetailMeta, { color: theme.textSecondary }]}>Status: {selectedActivityBooking.status}</Text>
+                  {selectedActivityBooking.status === "Rejected" && selectedActivityBooking.rejectedReason ? (
+                    <View style={styles.activityRejectedReasonWrap}>
+                      <Text style={styles.activityRejectedReasonTitle}>Rejected Reason</Text>
+                      <Text style={styles.activityRejectedReasonText}>{selectedActivityBooking.rejectedReason}</Text>
+                    </View>
+                  ) : null}
+                  {selectedActivityBooking.requesterUserId === DEFAULT_BOOKING_USER &&
+                  toActivityStatus(selectedActivityBooking.status) === "waiting" ? (
+                    <Pressable style={styles.activityDetailEditButton} onPress={() => startEditActivity(selectedActivityBooking.id)}>
+                      <Text style={styles.activityDetailEditButtonText}>Edit Activity</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : (
+                <View style={styles.activitiesEmptyWrap}>
+                  <Text style={[styles.activitiesEmptyTitle, { color: theme.textPrimary }]}>Activity not found</Text>
+                </View>
+              )}
+            </View>
+          ) : screenMode === "profile" ? (
+            <ProfileScreen onBack={() => setScreenMode("home")} />
           ) : (
-            <View style={styles.notificationScreen}>
+            <View style={[styles.notificationScreen, { backgroundColor: theme.screenBg }]}>
               <View style={styles.notificationHeader}>
-                <Text style={styles.notificationTitle}>Notifications</Text>
+                <Text style={[styles.notificationTitle, { color: theme.textPrimary }]}>Notifications</Text>
                 <Pressable onPress={() => setScreenMode("home")} style={styles.closeButton}>
                   <Text style={styles.closeButtonText}>Done</Text>
                 </Pressable>
@@ -984,18 +1359,48 @@ export default function PlanetScreen() {
                 showsVerticalScrollIndicator={false}
                 bounces={false}
               >
-                {notifications.map((item) => (
-                  <View key={item.id} style={styles.notificationCard}>
-                    <View style={styles.notificationIconWrap}>
-                      <BellIcon width={18} height={18} />
-                    </View>
-                    <View style={styles.notificationCopy}>
-                      <Text style={styles.notificationCardTitle}>{item.title}</Text>
-                      <Text style={styles.notificationCardBody}>{item.body}</Text>
-                      <Text style={styles.notificationCardTime}>{item.time}</Text>
-                    </View>
+                {isNotificationsLoading ? (
+                  <View style={styles.activitiesLoaderWrap}>
+                    <ActivityIndicator size="small" color="#A1C5F8" />
+                    <Text style={[styles.activitiesLoaderText, { color: theme.textSecondary }]}>Loading notifications...</Text>
                   </View>
-                ))}
+                ) : notifications.length === 0 ? (
+                  <View style={styles.activitiesEmptyWrap}>
+                    <Text style={[styles.activitiesEmptyTitle, { color: theme.textPrimary }]}>No notifications yet</Text>
+                    <Text style={[styles.activitiesEmptyText, { color: theme.textMuted }]}>
+                      You will see admin action updates here.
+                    </Text>
+                  </View>
+                ) : (
+                  notifications.map((item) => (
+                    <Pressable
+                      key={item.id}
+                      onPress={() => {
+                        if (item.read) {
+                          return;
+                        }
+                        void markNotificationReadApi(item.id);
+                        setNotifications((previous) =>
+                          previous.map((record) => (record.id === item.id ? { ...record, read: true } : record))
+                        );
+                      }}
+                      style={[
+                        styles.notificationCard,
+                        isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder },
+                        !item.read && styles.notificationCardUnread
+                      ]}
+                    >
+                      <View style={[styles.notificationIconWrap, isLight && { backgroundColor: theme.elevatedBg }]}>
+                        <BellIcon width={18} height={18} color={theme.textSecondary} />
+                      </View>
+                      <View style={styles.notificationCopy}>
+                        <Text style={[styles.notificationCardTitle, { color: theme.textPrimary }]}>{item.title}</Text>
+                        <Text style={[styles.notificationCardBody, { color: theme.textMuted }]}>{item.body}</Text>
+                        <Text style={[styles.notificationCardTime, { color: theme.textSecondary }]}>{item.time}</Text>
+                      </View>
+                    </Pressable>
+                  ))
+                )}
               </ScrollView>
             </View>
           )}
@@ -1011,7 +1416,7 @@ export default function PlanetScreen() {
           <View style={styles.bottomCtaWrap}>
             <Pressable style={styles.primaryCta} onPress={handleBookSpace} disabled={isBookingSubmitting}>
               {isBookingSubmitting ? <ActivityIndicator size="small" color="#101114" /> : null}
-              <Text style={styles.primaryCtaText}>Book Space</Text>
+              <Text style={styles.primaryCtaText}>{editingBookingId ? "Update Booking" : "Book Space"}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -1019,15 +1424,15 @@ export default function PlanetScreen() {
         {screenMode === "home" || screenMode === "spaceList" || screenMode === "activities" ? (
           <View style={styles.footerWrap} pointerEvents="box-none">
             <View style={styles.footerBase}>
-              <BlurView intensity={18} tint="dark" style={styles.footerBlurUnderlay} />
-              <FooterBaseSvg />
+              <BlurView intensity={18} tint={isLight ? "light" : "dark"} style={styles.footerBlurUnderlay} />
+              <FooterBaseSvg light={isLight} />
             </View>
 
             <Pressable
               onPress={() => setScreenMode("home")}
               style={[styles.footerIconButton, styles.footerLeftButton]}
             >
-              <LockIcon width={28} height={28} />
+              <LockIcon width={28} height={28} color={isLight ? "#1E2C54" : "#FFFFFF"} />
             </Pressable>
 
             <Pressable style={styles.centerDock} onPress={activateVoiceConversation}>
@@ -1041,9 +1446,74 @@ export default function PlanetScreen() {
               onPress={() => setScreenMode("activities")}
               style={[styles.footerIconButton, styles.footerRightButton]}
             >
-              <ClockFastForwardIcon width={28} height={28} />
+              <ClockFastForwardIcon width={28} height={28} color={isLight ? "#1E2C54" : "#FFFFFF"} />
             </Pressable>
           </View>
+        ) : null}
+
+        <ThemedBottomSheet
+          visible={activeSheet !== null && activeSheet !== "message"}
+          title={activeBottomSheetTitle}
+          options={activeBottomSheetOptions}
+          selectedId={activeBottomSheetSelectedId}
+          onClose={() => setActiveSheet(null)}
+          onSelect={(option) => {
+            if (activeSheet === "statusFilter") {
+              setActivityStatusFilter(option.id as ActivityStatusFilter);
+            }
+            if (activeSheet === "eventType") {
+              setEventType(option.id);
+            }
+            if (activeSheet === "time") {
+              setEventTime(option.id);
+            }
+            if (activeSheet === "duration") {
+              setEventDuration(option.id);
+            }
+            if (activeSheet === "visibility") {
+              setVisibility(option.id as "Public" | "Private");
+            }
+            setActiveSheet(null);
+          }}
+          theme={theme}
+        />
+
+        <ThemedInputBottomSheet
+          visible={activeSheet === "message"}
+          title="Activity Message"
+          initialValue={message}
+          placeholder="Add notes for residents and admins"
+          onClose={() => setActiveSheet(null)}
+          onSave={(value) => {
+            setMessage(value);
+            setActiveSheet(null);
+          }}
+          theme={theme}
+        />
+
+        {Platform.OS === "ios" ? (
+          <Modal visible={isIosDatePickerVisible} transparent animationType="slide" onRequestClose={() => setIsIosDatePickerVisible(false)}>
+            <Pressable style={styles.datePickerBackdrop} onPress={() => setIsIosDatePickerVisible(false)} />
+            <View style={[styles.datePickerSheet, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
+              <View style={styles.datePickerHeader}>
+                <Text style={[styles.datePickerTitle, { color: theme.textPrimary }]}>Select Date</Text>
+                <Pressable onPress={() => setIsIosDatePickerVisible(false)}>
+                  <Text style={[styles.datePickerDone, { color: theme.primaryButtonBg }]}>Done</Text>
+                </Pressable>
+              </View>
+              <DateTimePicker
+                mode="date"
+                value={parseFormDateToDate(eventDate)}
+                display="inline"
+                onChange={(_event, selectedDate) => {
+                  if (!selectedDate) {
+                    return;
+                  }
+                  onNativeDateSelected(selectedDate);
+                }}
+              />
+            </View>
+          </Modal>
         ) : null}
 
         {isVoiceAssistantActive ? (
@@ -1106,12 +1576,13 @@ function ModuleTile({ module, onPress }: { module: ModuleCard; onPress?: () => v
 }
 
 function FlowHeader({ title, onBack }: { title: string; onBack: () => void }) {
+  const theme = profileThemes[useThemeStore((state) => state.mode)];
   return (
     <View style={styles.flowHeader}>
-      <Pressable onPress={onBack} style={styles.flowBackButton}>
-        <Text style={styles.flowBackButtonText}>‹</Text>
+      <Pressable onPress={onBack} style={[styles.flowBackButton, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.flowBackButtonText, { color: theme.textSecondary }]}>‹</Text>
       </Pressable>
-      <Text style={styles.flowHeaderTitle}>{title}</Text>
+      <Text style={[styles.flowHeaderTitle, { color: theme.textPrimary }]}>{title}</Text>
     </View>
   );
 }
@@ -1125,18 +1596,19 @@ function FormPickerRow({
   value: string;
   onPress: () => void;
 }) {
+  const theme = profileThemes[useThemeStore((state) => state.mode)];
   return (
     <View style={styles.formRow}>
-      <Text style={styles.formFieldLabel}>{label}</Text>
-      <Pressable onPress={onPress} style={styles.formValueChip}>
-        <Text style={styles.formValueText}>{value}</Text>
+      <Text style={[styles.formFieldLabel, { color: theme.textSecondary }]}>{label}</Text>
+      <Pressable onPress={onPress} style={[styles.formValueChip, { backgroundColor: theme.elevatedBg, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.formValueText, { color: theme.textPrimary }]}>{value}</Text>
       </Pressable>
     </View>
   );
 }
 
 function ActivityStatusBadge({ status }: { status: "approved" | "declined" | "waiting" }) {
-  const label = status === "approved" ? "Approved" : status === "declined" ? "Declined" : "Waiting";
+  const label = activitiesUi.statusBadgeLabels[status];
   return (
     <View
       style={[
@@ -1170,13 +1642,13 @@ function nextOption(current: string, options: string[]) {
   return options[nextIndex];
 }
 
-function FooterBaseSvg() {
+function FooterBaseSvg({ light = false }: { light?: boolean }) {
   return (
     <Svg width="100%" height="100%" viewBox="0 0 390 89" preserveAspectRatio="none">
       <Defs>
         <SvgLinearGradient id="footerGradient" x1="271.51" y1="0.617188" x2="271.51" y2="88.6172">
-          <Stop offset="0" stopColor="#3A3A6A" stopOpacity={0.26} />
-          <Stop offset="1" stopColor="#25244C" stopOpacity={0.26} />
+          <Stop offset="0" stopColor={light ? "#C6D6EE" : "#3A3A6A"} stopOpacity={light ? 0.6 : 0.26} />
+          <Stop offset="1" stopColor={light ? "#B3C7E8" : "#25244C"} stopOpacity={light ? 0.65 : 0.26} />
         </SvgLinearGradient>
       </Defs>
       <Path
@@ -1186,7 +1658,7 @@ function FooterBaseSvg() {
       <Path
         d="M0.0546875 0.373047C0.0569897 0.37353 0.060824 0.374034 0.0654297 0.375C0.0746105 0.376926 0.0882719 0.379984 0.106445 0.383789C0.143079 0.39146 0.198029 0.402844 0.270508 0.417969C0.415894 0.448308 0.633267 0.49374 0.917969 0.552734C1.48728 0.670705 2.32886 0.844126 3.41797 1.06641C5.59715 1.51116 8.76812 2.15121 12.7314 2.93164C20.6581 4.4925 31.7571 6.61576 44.4473 8.86426C69.8302 13.3617 101.571 18.3602 127.02 20.3682C153.355 22.446 168.563 23.3672 195 23.3672C221.437 23.3672 235.645 22.4461 261.98 20.3682C287.43 18.3602 319.42 13.3617 345.053 8.86426C357.868 6.6157 369.093 4.49252 377.113 2.93164C381.123 2.15122 384.333 1.51117 386.539 1.06641C387.642 0.844027 388.496 0.670726 389.072 0.552734C389.36 0.493813 389.579 0.448294 389.727 0.417969C389.8 0.402799 389.856 0.391475 389.894 0.383789C389.912 0.379971 389.926 0.376924 389.936 0.375C389.94 0.374124 389.943 0.373516 389.945 0.373047C389.946 0.372835 389.948 0.373166 389.948 0.373047C389.949 0.375761 389.955 0.400242 390 0.617188L389.949 0.37207L390.25 0.30957V88.8672H-0.25V0.30957L0.0517578 0.37207L0 0.617188C0.0513978 0.372528 0.0521648 0.372927 0.0527344 0.373047H0.0546875Z"
         fill="none"
-        stroke="rgba(117,130,244,0.5)"
+        stroke={light ? "rgba(63,109,184,0.45)" : "rgba(117,130,244,0.5)"}
         strokeWidth={0.5}
       />
     </Svg>
@@ -1223,20 +1695,20 @@ function MicBgSvg() {
   );
 }
 
-function ArrowDownIcon(props: SvgProps) {
+function ArrowDownIcon({ color = "#FFFFFF", ...props }: SvgProps & { color?: string }) {
   return (
     <Svg viewBox="0 0 16 16" fill="none" {...props}>
-      <Path d="M4 6L8 10L12 6" stroke="#FFFFFF" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M4 6L8 10L12 6" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
 
-function BellIcon(props: SvgProps) {
+function BellIcon({ color = "white", ...props }: SvgProps & { color?: string }) {
   return (
     <Svg viewBox="0 0 24 24" fill="none" {...props}>
       <Path
         d="M9.5 19C9.88471 20.1411 10.9733 21 12.25 21C13.5267 21 14.6153 20.1411 15 19M17 8.5C17 6.01472 14.9853 4 12.5 4C10.0147 4 8 6.01472 8 8.5C8 10.6888 7.21574 12.1546 6.34012 13.1174C5.6007 13.9306 5.23099 14.3372 5.22157 14.4507C5.21114 14.5763 5.23776 14.6241 5.33744 14.7012C5.42748 14.7708 6.03841 14.7708 7.26028 14.7708H17.7397C18.9616 14.7708 19.5725 14.7708 19.6626 14.7012C19.7622 14.6241 19.7889 14.5763 19.7784 14.4507C19.769 14.3372 19.3993 13.9306 18.6599 13.1174C17.7843 12.1546 17 10.6888 17 8.5Z"
-        stroke="white"
+        stroke={color}
         strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -1245,12 +1717,12 @@ function BellIcon(props: SvgProps) {
   );
 }
 
-function LockIcon(props: SvgProps) {
+function LockIcon({ color = "white", ...props }: SvgProps & { color?: string }) {
   return (
     <Svg viewBox="0 0 32 32" fill="none" {...props}>
       <Path
         d="M9.46542 13.3333H9.33073V10.6667C9.33073 6.98477 12.3155 4 15.9974 4C19.6793 4 22.6641 6.98477 22.6641 10.6667V13.3333H22.5294M15.9974 18.6667V21.3333M25.3307 20C25.3307 25.1547 21.1521 29.3333 15.9974 29.3333C10.8427 29.3333 6.66406 25.1547 6.66406 20C6.66406 14.8453 10.8427 10.6667 15.9974 10.6667C21.1521 10.6667 25.3307 14.8453 25.3307 20Z"
-        stroke="white"
+        stroke={color}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -1259,12 +1731,12 @@ function LockIcon(props: SvgProps) {
   );
 }
 
-function ClockFastForwardIcon(props: SvgProps) {
+function ClockFastForwardIcon({ color = "white", ...props }: SvgProps & { color?: string }) {
   return (
     <Svg viewBox="0 0 32 32" fill="none" {...props}>
       <Path
         d="M28 16C28 22.6274 22.6274 28 16 28C9.37258 28 4 22.6274 4 16C4 9.37258 9.37258 4 16 4C19.8932 4 23.3533 5.85453 25.5452 8.72727M28 8V4M28 8H24M16 10V16L19.5 19.5"
-        stroke="white"
+        stroke={color}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -1273,12 +1745,12 @@ function ClockFastForwardIcon(props: SvgProps) {
   );
 }
 
-function FilterIcon(props: SvgProps) {
+function FilterIcon({ color = "#FFFFFF", ...props }: SvgProps & { color?: string }) {
   return (
     <Svg viewBox="0 0 24 24" fill="none" {...props}>
       <Path
         d="M3 6.75H21M6 12H18M10 17.25H14"
-        stroke="#FFFFFF"
+        stroke={color}
         strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -1993,7 +2465,8 @@ const styles = StyleSheet.create({
   activitiesToolbar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
+    gap: 12,
     marginBottom: 12
   },
   activitiesSegmented: {
@@ -2004,14 +2477,17 @@ const styles = StyleSheet.create({
     borderColor: "#353B43",
     backgroundColor: "#232736",
     flexDirection: "row",
-    padding: 0
+    padding: 0,
+    minWidth: 0,
+    marginRight: 4
   },
   activitiesSegmentButton: {
     flex: 1,
     height: 48,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 12
+    borderRadius: 12,
+    paddingHorizontal: 8
   },
   activitiesSegmentButtonActive: {
     backgroundColor: "rgba(60, 180, 229, 0.55)"
@@ -2027,9 +2503,9 @@ const styles = StyleSheet.create({
     color: "#FFFFFF"
   },
   activitiesFilterButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: "#353B43",
     backgroundColor: "#242937",
@@ -2155,9 +2631,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 12
   },
+  notificationCardUnread: {
+    borderColor: "#55BEE9"
+  },
   activityTitle: {
     flex: 1,
-    color: "#040415",
+    color: "#FFFFFF",
     fontFamily: "Noto Sans",
     fontSize: 14,
     fontWeight: "700",
@@ -2181,7 +2660,7 @@ const styles = StyleSheet.create({
     gap: 4
   },
   activityTime: {
-    color: "#040415",
+    color: "#FFFFFF",
     fontFamily: "Noto Sans",
     fontSize: 14,
     fontWeight: "500",
@@ -2220,6 +2699,207 @@ const styles = StyleSheet.create({
   },
   activityStatusTextWaiting: {
     color: "#DC6803"
+  },
+  activityDetailCard: {
+    marginTop: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#353B43",
+    backgroundColor: "#242937",
+    padding: 18,
+    gap: 10
+  },
+  activityDetailTitle: {
+    color: "#FFFFFF",
+    fontFamily: "Noto Sans",
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 24
+  },
+  activityDetailMeta: {
+    color: "#C6D0E6",
+    fontFamily: "Noto Sans",
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 20
+  },
+  activityRejectedReasonWrap: {
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#FECDCA",
+    backgroundColor: "#2E1F25",
+    padding: 12,
+    gap: 4
+  },
+  activityRejectedReasonTitle: {
+    color: "#FECACA",
+    fontFamily: "Noto Sans",
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 18
+  },
+  activityRejectedReasonText: {
+    color: "#FEE2E2",
+    fontFamily: "Noto Sans",
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 18
+  },
+  activityDetailEditButton: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+    borderRadius: 12,
+    backgroundColor: "#7582F4",
+    paddingHorizontal: 16,
+    paddingVertical: 10
+  },
+  activityDetailEditButtonText: {
+    color: "#FFFFFF",
+    fontFamily: "Noto Sans",
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 18
+  },
+  profileScreen: {
+    flex: 1,
+    paddingBottom: 30
+  },
+  profileScrollContent: {
+    paddingBottom: 120,
+    gap: 12
+  },
+  profileHeaderCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#212529",
+    backgroundColor: "#05070B",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  profileAvatarLarge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#DFE8F7",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  profileAvatarLargeInitial: {
+    color: "#24355E",
+    fontFamily: "Noto Sans",
+    fontSize: 20,
+    fontWeight: "700",
+    lineHeight: 24
+  },
+  profileHeaderTextWrap: {
+    flex: 1,
+    gap: 2
+  },
+  profileName: {
+    color: "#FFFFFF",
+    fontFamily: "Noto Sans",
+    fontSize: 22,
+    fontWeight: "700",
+    lineHeight: 28
+  },
+  profileSubtitle: {
+    color: "#899CBE",
+    fontFamily: "Noto Sans",
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 18
+  },
+  profileQuickGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8
+  },
+  profileQuickCard: {
+    width: "48.8%",
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: "#372F1D",
+    backgroundColor: "#131A27",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8
+  },
+  profileQuickIcon: {
+    color: "#899CBE",
+    fontFamily: "Noto Sans",
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 22
+  },
+  profileQuickText: {
+    color: "#899CBE",
+    fontFamily: "Noto Sans",
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 16
+  },
+  profilePrivacyCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#212529",
+    backgroundColor: "#05070B",
+    paddingHorizontal: 16,
+    paddingVertical: 17,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  profilePrivacyText: {
+    color: "#FFFFFF",
+    fontFamily: "Noto Sans",
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18
+  },
+  profileSectionTitle: {
+    color: "#FFFFFF",
+    fontFamily: "Noto Sans",
+    fontSize: 15,
+    fontWeight: "700",
+    lineHeight: 20,
+    marginTop: 4
+  },
+  profileMenuList: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#212529",
+    backgroundColor: "#05070B",
+    paddingHorizontal: 8,
+    paddingVertical: 8
+  },
+  profileMenuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+    paddingVertical: 10
+  },
+  profileMenuRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#212529"
+  },
+  profileMenuText: {
+    color: "#899CBE",
+    fontFamily: "Noto Sans",
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 18
+  },
+  profileArrow: {
+    color: "#FFFFFF",
+    fontFamily: "Noto Sans",
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 20
   },
   detailScrollContent: {
     paddingBottom: 124
@@ -2474,6 +3154,70 @@ const styles = StyleSheet.create({
     fontFamily: "Noto Sans",
     textAlignVertical: "top",
     fontSize: 14
+  },
+  userInputWrap: {
+    minHeight: 48,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#2A3043",
+    backgroundColor: "#0F1320",
+    justifyContent: "center",
+    marginBottom: 10
+  },
+  userInput: {
+    minHeight: 48,
+    paddingHorizontal: 14,
+    fontFamily: "Noto Sans",
+    fontSize: 14,
+    fontWeight: "500"
+  },
+  userSuggestionList: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#2A3043",
+    backgroundColor: "#151A24",
+    padding: 8,
+    gap: 6,
+    marginBottom: 14
+  },
+  userSuggestionItem: {
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10
+  },
+  userSuggestionText: {
+    fontFamily: "Noto Sans",
+    fontSize: 14,
+    fontWeight: "600"
+  },
+  datePickerBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(5, 7, 14, 0.6)"
+  },
+  datePickerSheet: {
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 22
+  },
+  datePickerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6
+  },
+  datePickerTitle: {
+    fontFamily: "Noto Sans",
+    fontSize: 20,
+    fontWeight: "800"
+  },
+  datePickerDone: {
+    fontFamily: "Noto Sans",
+    fontSize: 16,
+    fontWeight: "700"
   },
   bottomCtaWrap: {
     position: "absolute",

@@ -137,12 +137,13 @@ export async function transitionEntity<K extends ModuleKey>(
   moduleKey: K,
   id: string,
   statusField: keyof ModuleEntityMap[K],
-  nextStatus: string
+  nextStatus: string,
+  body?: Record<string, unknown>
 ) {
   const transitionPath = actionPathMap[moduleKey]?.[nextStatus];
   if (!transitionPath) {
     return updateEntity(moduleKey, id, { [statusField]: nextStatus } as Partial<ModuleEntityMap[K]>);
   }
   const path = `${endpointMap[moduleKey]}/${id}/${transitionPath}`;
-  return await apiRequest<ModuleEntityMap[K]>(path, { method: "POST" });
+  return await apiRequest<ModuleEntityMap[K]>(path, { method: "POST", body });
 }

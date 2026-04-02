@@ -61,6 +61,7 @@ export type InvitationEntity = EntityBase & {
 export type BookingEntity = EntityBase & {
   requesterUserId: string;
   apartmentId: string;
+  authorName?: string;
   spaceType: "Community Hall" | "Co-Work Space" | "Gym" | "Pool" | "Court";
   eventType: string;
   visibility: "Public" | "Private";
@@ -68,7 +69,25 @@ export type BookingEntity = EntityBase & {
   bookingDate: string;
   startTime: string;
   endTime: string;
-  status: "Pending" | "Approved" | "Rejected" | "Cancelled";
+  paymentLabel?: string;
+  paymentStatus?: "Unpaid" | "Paid" | "RefundInitiated" | "Refunded";
+  paymentMethod?: "InternalPA" | "Razorpay" | "Cash" | "BankTransfer";
+  coverImageUrl?: string;
+  rejectedReason?: string;
+  status:
+    | "Draft"
+    | "Pending"
+    | "ToCheck"
+    | "Approved"
+    | "ToPay"
+    | "Online"
+    | "Rejected"
+    | "Refund"
+    | "Refunded"
+    | "Confirmed"
+    | "Completed"
+    | "Cancelled"
+    | "NoShow";
   approvedByUserId?: string;
 };
 

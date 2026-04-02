@@ -1,6 +1,19 @@
 import { Platform } from "react-native";
 
-export type BookingApiStatus = "Draft" | "Pending" | "Approved" | "Rejected" | "Confirmed" | "Completed" | "Cancelled" | "NoShow";
+export type BookingApiStatus =
+  | "Draft"
+  | "Pending"
+  | "ToCheck"
+  | "Approved"
+  | "ToPay"
+  | "Online"
+  | "Rejected"
+  | "Refund"
+  | "Refunded"
+  | "Confirmed"
+  | "Completed"
+  | "Cancelled"
+  | "NoShow";
 
 export type BookingApiEntity = {
   id: string;
@@ -15,6 +28,7 @@ export type BookingApiEntity = {
   startTime: string;
   endTime: string;
   status: BookingApiStatus;
+  rejectedReason?: string;
   approvedByUserId?: string;
   createdAt: string;
   updatedAt: string;
@@ -39,6 +53,10 @@ type CreateBookingPayload = {
   startTime: string;
   endTime: string;
   status: BookingApiStatus;
+};
+
+type UpdateBookingPayload = Partial<CreateBookingPayload> & {
+  rejectedReason?: string;
 };
 
 const API_BASE_URL =
@@ -76,6 +94,21 @@ export async function createBookingApi(payload: CreateBookingPayload): Promise<B
   if (!response.ok) {
     const text = await response.text();
     throw new Error(`Failed to create booking (${response.status}): ${text}`);
+  }
+
+  return (await response.json()) as BookingApiEntity;
+}
+
+export async function updateBookingApi(id: string, payload: UpdateBookingPayload): Promise<BookingApiEntity> {
+  const response = await fetch(`${API_BASE_URL}/bookings/${id}`, {
+    method: "PATCH",
+    headers: API_HEADERS,
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to update booking (${response.status}): ${text}`);
   }
 
   return (await response.json()) as BookingApiEntity;

@@ -1,0 +1,38 @@
+{
+  "activities": {
+    "tabs": [
+      { "id": "all", "label": "All Activities" },
+      { "id": "my", "label": "My Activities" }
+    ],
+    "statusFilters": [
+      { "id": "all", "label": "All" },
+      { "id": "waiting", "label": "Waiting" },
+      { "id": "approved", "label": "Approved" },
+      { "id": "declined", "label": "Declined" }
+    ],
+    "dateChips": ["Today", "22", "23", "24", "25", "26"],
+    "statusBadgeLabels": {
+      "waiting": "Waiting",
+      "approved": "Approved",
+      "declined": "Declined"
+    }
+  },
+  "profile": {
+    "quickActions": [
+      { "id": "dark-mode", "label": "Dark Mode On" },
+      { "id": "manage-invites", "label": "Manage Invites" },
+      { "id": "achievements", "label": "Achievements" },
+      { "id": "saved-locks", "label": "Saved Locks" },
+      { "id": "group-chat", "label": "My Group Chat" },
+      { "id": "event-calendar", "label": "Event Calendar" }
+    ],
+    "accountMenu": [
+      { "id": "blocked", "label": "Blocked Accounts" },
+      { "id": "notifications", "label": "Notifications" },
+      { "id": "support", "label": "Help & Support" },
+      { "id": "privacy", "label": "Privacy & Terms" },
+      { "id": "contact", "label": "Contact Us" },
+      { "id": "logout", "label": "Log Out" }
+    ]
+  }
+}
