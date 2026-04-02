@@ -5,6 +5,8 @@ import * as Speech from "expo-speech";
 import { StatusBar } from "expo-status-bar";
 import Svg, { Circle, Path, Rect, SvgProps, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   ImageSourcePropType,
   Platform,
@@ -15,8 +17,10 @@ import {
   TextInput,
   View
 } from "react-native";
+import { BookingApiEntity, createBookingApi, listBookingsApi } from "../services/bookingsApi";
 
-type ScreenMode = "home" | "notifications" | "spaceList" | "spaceDetail" | "bookingForm";
+type ScreenMode = "home" | "notifications" | "spaceList" | "spaceDetail" | "bookingForm" | "activities";
+type ActivityScope = "all" | "my";
 
 type ModuleCard = {
   id: string;
@@ -49,6 +53,16 @@ type SpaceItem = {
   imageSource: ImageSourcePropType;
   gallerySources: ImageSourcePropType[];
   renderArtwork: (props: SvgProps) => React.JSX.Element;
+};
+
+type ActivityCard = {
+  id: string;
+  title: string;
+  category: string;
+  time: string;
+  status: "approved" | "declined" | "waiting";
+  visibility: "Public" | "Private";
+  owner: "my" | "all";
 };
 
 const HOME_WEATHER_LOCATION = {
@@ -276,6 +290,62 @@ const spaces: SpaceItem[] = [
   }
 ];
 
+const ACTIVITY_DATES = ["Today", "22", "23", "24", "25", "26"] as const;
+const DEFAULT_BOOKING_USER = "usr-res-001";
+const DEFAULT_BOOKING_APARTMENT = "apt-a-102";
+const DEFAULT_BOOKING_SOCIETY = "soc-001";
+
+function mapSpaceToApiSpaceType(spaceId: string): "Community Hall" | "Co-Work Space" | "Gym" | "Pool" | "Court" {
+  if (spaceId === "community-hall") return "Community Hall";
+  if (spaceId === "co-work-space") return "Co-Work Space";
+  if (spaceId === "gym") return "Gym";
+  if (spaceId === "swimming-pool" || spaceId === "infinity-pool") return "Pool";
+  return "Court";
+}
+
+function parseDateForApi(value: string): string {
+  const exactDateMap: Record<string, string> = {
+    "12 Apr 2026": "2026-04-12",
+    "13 Apr 2026": "2026-04-13",
+    "14 Apr 2026": "2026-04-14"
+  };
+  return exactDateMap[value] ?? "2026-04-12";
+}
+
+function parseTimeRange(value: string): { startTime: string; endTime: string } {
+  if (value === "10:00 AM") return { startTime: "10:00", endTime: "11:00" };
+  if (value === "2:00 PM") return { startTime: "14:00", endTime: "15:00" };
+  if (value === "6:00 PM") return { startTime: "18:00", endTime: "19:00" };
+  return { startTime: "10:00", endTime: "11:00" };
+}
+
+function toActivityStatus(status: string): "approved" | "declined" | "waiting" {
+  if (status === "Approved") return "approved";
+  if (status === "Rejected" || status === "Cancelled") return "declined";
+  return "waiting";
+}
+
+function formatClockFrom24(value: string): string {
+  const [hourRaw, minuteRaw] = value.split(":");
+  const hour = Number.parseInt(hourRaw ?? "0", 10);
+  const minute = Number.parseInt(minuteRaw ?? "0", 10);
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const normalizedHour = hour % 12 === 0 ? 12 : hour % 12;
+  return `${String(normalizedHour).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${suffix}`;
+}
+
+function buildActivityCards(bookings: BookingApiEntity[]): ActivityCard[] {
+  return bookings.map((booking) => ({
+    id: booking.id,
+    title: booking.eventType,
+    category: booking.spaceType,
+    time: formatClockFrom24(booking.startTime),
+    status: toActivityStatus(booking.status),
+    visibility: booking.visibility,
+    owner: booking.requesterUserId === DEFAULT_BOOKING_USER ? "my" : "all"
+  }));
+}
+
 export default function PlanetScreen() {
   const [screenMode, setScreenMode] = useState<ScreenMode>("home");
   const [selectedSpaceId, setSelectedSpaceId] = useState(spaces[0].id);
@@ -289,8 +359,13 @@ export default function PlanetScreen() {
   const [eventTime, setEventTime] = useState("Select Time");
   const [eventDuration, setEventDuration] = useState("Select Duration");
   const [repeatMode, setRepeatMode] = useState("None");
-  const [visibility, setVisibility] = useState("Select");
+  const [visibility, setVisibility] = useState<"Select" | "Public" | "Private">("Select");
   const [message, setMessage] = useState("");
+  const [bookingItems, setBookingItems] = useState<BookingApiEntity[]>([]);
+  const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
+  const [isActivitiesLoading, setIsActivitiesLoading] = useState(false);
+  const [activityScope, setActivityScope] = useState<ActivityScope>("all");
+  const [selectedActivityDate, setSelectedActivityDate] = useState<(typeof ACTIVITY_DATES)[number]>("Today");
   const [isVoiceAssistantActive, setIsVoiceAssistantActive] = useState(false);
   const [voiceReply, setVoiceReply] = useState("Tap a command and Planet App will respond.");
   const [selectedIndianVoice, setSelectedIndianVoice] = useState<string | undefined>(undefined);
@@ -309,6 +384,13 @@ export default function PlanetScreen() {
         Math.max(selectedSpaceGallery.length - 1, 0)
       )
     ];
+  const activityCards = useMemo(() => buildActivityCards(bookingItems), [bookingItems]);
+  const filteredActivities = useMemo(() => {
+    if (activityScope === "my") {
+      return activityCards.filter((item) => item.owner === "my");
+    }
+    return activityCards.filter((item) => item.visibility === "Public" || item.owner === "my");
+  }, [activityCards, activityScope]);
 
   useEffect(() => {
     setSelectedSpaceGalleryIndex(0);
@@ -499,6 +581,69 @@ export default function PlanetScreen() {
     };
   }, []);
 
+  const loadActivities = async () => {
+    try {
+      setIsActivitiesLoading(true);
+      const response = await listBookingsApi();
+      setBookingItems(response);
+    } catch (error) {
+      Alert.alert("Activities unavailable", error instanceof Error ? error.message : "Unable to load activities.");
+    } finally {
+      setIsActivitiesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadActivities();
+  }, []);
+
+  useEffect(() => {
+    if (screenMode !== "activities") {
+      return;
+    }
+    void loadActivities();
+    const timer = setInterval(() => {
+      void loadActivities();
+    }, 12000);
+    return () => clearInterval(timer);
+  }, [screenMode]);
+
+  const handleBookSpace = async () => {
+    if (eventType === "Select event type" || eventDate === "Select Date" || eventTime === "Select Time" || eventDuration === "Select Duration") {
+      Alert.alert("Incomplete form", "Please select event type, date, time, and duration.");
+      return;
+    }
+    if (visibility === "Select") {
+      Alert.alert("Visibility required", "Please select Public or Private visibility.");
+      return;
+    }
+    setIsBookingSubmitting(true);
+    try {
+      const timeRange = parseTimeRange(eventTime);
+      const created = await createBookingApi({
+        societyId: DEFAULT_BOOKING_SOCIETY,
+        requesterUserId: DEFAULT_BOOKING_USER,
+        apartmentId: DEFAULT_BOOKING_APARTMENT,
+        eventType,
+        spaceType: mapSpaceToApiSpaceType(selectedSpace.id),
+        visibility,
+        message: message.trim() || undefined,
+        bookingDate: parseDateForApi(eventDate),
+        startTime: timeRange.startTime,
+        endTime: timeRange.endTime,
+        status: "Pending"
+      });
+      setBookingItems((previous) => [created, ...previous]);
+      setActivityScope("my");
+      setSelectedActivityDate("Today");
+      setScreenMode("activities");
+    } catch (error) {
+      Alert.alert("Booking failed", error instanceof Error ? error.message : "Unable to submit booking request.");
+    } finally {
+      setIsBookingSubmitting(false);
+    }
+  };
+
   return (
     <View style={styles.safeArea}>
       <StatusBar style="light" />
@@ -598,6 +743,9 @@ export default function PlanetScreen() {
                 Press the mic and mention all your booking details like event date, time, duration,
                 repeat and occasion.
               </Text>
+              <Pressable style={styles.activitiesQuickButton} onPress={() => setScreenMode("activities")}>
+                <Text style={styles.activitiesQuickButtonText}>View Activities</Text>
+              </Pressable>
             </View>
           ) : screenMode === "spaceDetail" ? (
             <ScrollView
@@ -709,7 +857,7 @@ export default function PlanetScreen() {
                 <FormPickerRow
                   label="Visibility"
                   value={visibility}
-                  onPress={() => setVisibility(nextOption(visibility, ["Select", "Residents", "Members", "Committee"]))}
+                  onPress={() => setVisibility(nextOption(visibility, ["Select", "Public", "Private"]) as "Select" | "Public" | "Private")}
                 />
 
                 <Text style={styles.formFieldLabel}>Message</Text>
@@ -723,6 +871,105 @@ export default function PlanetScreen() {
                 />
               </View>
             </ScrollView>
+          ) : screenMode === "activities" ? (
+            <View style={styles.activitiesScreen}>
+              <View style={styles.flowHeader}>
+                <Pressable onPress={() => setScreenMode("spaceList")} style={styles.flowBackButton}>
+                  <Text style={styles.flowBackButtonText}>‹</Text>
+                </Pressable>
+                <Text style={styles.flowHeaderTitle}>Activities</Text>
+              </View>
+
+              <View style={styles.activitiesToolbar}>
+                <View style={styles.activitiesSegmented}>
+                  <Pressable
+                    style={[styles.activitiesSegmentButton, activityScope === "all" && styles.activitiesSegmentButtonActive]}
+                    onPress={() => setActivityScope("all")}
+                  >
+                    <Text style={[styles.activitiesSegmentText, activityScope === "all" && styles.activitiesSegmentTextActive]}>
+                      All Activities
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.activitiesSegmentButton, activityScope === "my" && styles.activitiesSegmentButtonActive]}
+                    onPress={() => setActivityScope("my")}
+                  >
+                    <Text style={[styles.activitiesSegmentText, activityScope === "my" && styles.activitiesSegmentTextActive]}>
+                      My Activities
+                    </Text>
+                  </Pressable>
+                </View>
+                <Pressable style={styles.activitiesFilterButton}>
+                  <FilterIcon width={24} height={24} />
+                </Pressable>
+              </View>
+
+              <View style={styles.activitiesDatesRow}>
+                <ClockFastForwardIcon width={24} height={24} />
+                {ACTIVITY_DATES.map((dateItem) => (
+                  <Pressable
+                    key={dateItem}
+                    onPress={() => setSelectedActivityDate(dateItem)}
+                    style={[
+                      styles.activityDateChip,
+                      selectedActivityDate === dateItem && styles.activityDateChipActive
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.activityDateText,
+                        selectedActivityDate === dateItem && styles.activityDateTextActive
+                      ]}
+                    >
+                      {dateItem}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <View style={styles.activitiesPanel}>
+                {isActivitiesLoading ? (
+                  <View style={styles.activitiesLoaderWrap}>
+                    <ActivityIndicator size="small" color="#A1C5F8" />
+                    <Text style={styles.activitiesLoaderText}>Loading activities...</Text>
+                  </View>
+                ) : filteredActivities.length === 0 ? (
+                  <View style={styles.activitiesEmptyWrap}>
+                    <Text style={styles.activitiesEmptyTitle}>No activities found</Text>
+                    <Text style={styles.activitiesEmptyText}>Book a space to create your first activity request.</Text>
+                  </View>
+                ) : (
+                  <ScrollView
+                    contentContainerStyle={styles.activitiesListContent}
+                    showsVerticalScrollIndicator={false}
+                    bounces={false}
+                  >
+                    {filteredActivities.map((activity) => (
+                      <View key={activity.id} style={styles.activityCard}>
+                        <View style={styles.activityIconCircle}>
+                          <Text style={styles.activityIconText}>{activity.category.slice(0, 1)}</Text>
+                        </View>
+                        <View style={styles.activityBody}>
+                          <View style={styles.activityTopRow}>
+                            <Text style={styles.activityTitle} numberOfLines={1}>
+                              {activity.title}
+                            </Text>
+                            <ActivityStatusBadge status={activity.status} />
+                          </View>
+                          <View style={styles.activityBottomRow}>
+                            <Text style={styles.activityCategory}>{activity.category}</Text>
+                            <View style={styles.activityTimeRow}>
+                              <ClockIcon width={16} height={16} />
+                              <Text style={styles.activityTime}>{activity.time}</Text>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            </View>
           ) : (
             <View style={styles.notificationScreen}>
               <View style={styles.notificationHeader}>
@@ -762,14 +1009,14 @@ export default function PlanetScreen() {
           </View>
         ) : screenMode === "bookingForm" ? (
           <View style={styles.bottomCtaWrap}>
-            <Pressable style={styles.primaryCta}>
-              <MicIcon width={20} height={20} />
-              <Text style={styles.primaryCtaText}>Talk to Book This Space</Text>
+            <Pressable style={styles.primaryCta} onPress={handleBookSpace} disabled={isBookingSubmitting}>
+              {isBookingSubmitting ? <ActivityIndicator size="small" color="#101114" /> : null}
+              <Text style={styles.primaryCtaText}>Book Space</Text>
             </Pressable>
           </View>
         ) : null}
 
-        {screenMode === "home" || screenMode === "spaceList" ? (
+        {screenMode === "home" || screenMode === "spaceList" || screenMode === "activities" ? (
           <View style={styles.footerWrap} pointerEvents="box-none">
             <View style={styles.footerBase}>
               <BlurView intensity={18} tint="dark" style={styles.footerBlurUnderlay} />
@@ -791,10 +1038,10 @@ export default function PlanetScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => setScreenMode("notifications")}
+              onPress={() => setScreenMode("activities")}
               style={[styles.footerIconButton, styles.footerRightButton]}
             >
-              <UsersIcon width={28} height={28} />
+              <ClockFastForwardIcon width={28} height={28} />
             </Pressable>
           </View>
         ) : null}
@@ -884,6 +1131,35 @@ function FormPickerRow({
       <Pressable onPress={onPress} style={styles.formValueChip}>
         <Text style={styles.formValueText}>{value}</Text>
       </Pressable>
+    </View>
+  );
+}
+
+function ActivityStatusBadge({ status }: { status: "approved" | "declined" | "waiting" }) {
+  const label = status === "approved" ? "Approved" : status === "declined" ? "Declined" : "Waiting";
+  return (
+    <View
+      style={[
+        styles.activityStatusBadge,
+        status === "approved"
+          ? styles.activityStatusApproved
+          : status === "declined"
+          ? styles.activityStatusDeclined
+          : styles.activityStatusWaiting
+      ]}
+    >
+      <Text
+        style={[
+          styles.activityStatusText,
+          status === "approved"
+            ? styles.activityStatusTextApproved
+            : status === "declined"
+            ? styles.activityStatusTextDeclined
+            : styles.activityStatusTextWaiting
+        ]}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
@@ -983,13 +1259,41 @@ function LockIcon(props: SvgProps) {
   );
 }
 
-function UsersIcon(props: SvgProps) {
+function ClockFastForwardIcon(props: SvgProps) {
   return (
     <Svg viewBox="0 0 32 32" fill="none" {...props}>
       <Path
-        d="M29.3307 28V25.3333C29.3307 22.8482 27.631 20.7601 25.3307 20.168M20.6641 4.38768C22.6186 5.17886 23.9974 7.09508 23.9974 9.33333C23.9974 11.5716 22.6186 13.4878 20.6641 14.279M22.6641 28C22.6641 25.515 22.6641 24.2725 22.2581 23.2924C21.7168 21.9855 20.6785 20.9473 19.3717 20.406C18.3916 20 17.1491 20 14.6641 20H10.6641C8.17904 20 6.93653 20 5.95642 20.406C4.6496 20.9473 3.61134 21.9855 3.07004 23.2924C2.66406 24.2725 2.66406 25.515 2.66406 28M17.9974 9.33333C17.9974 12.2789 15.6096 14.6667 12.6641 14.6667C9.71854 14.6667 7.33073 12.2789 7.33073 9.33333C7.33073 6.38781 9.71854 4 12.6641 4C15.6096 4 17.9974 6.38781 17.9974 9.33333Z"
+        d="M28 16C28 22.6274 22.6274 28 16 28C9.37258 28 4 22.6274 4 16C4 9.37258 9.37258 4 16 4C19.8932 4 23.3533 5.85453 25.5452 8.72727M28 8V4M28 8H24M16 10V16L19.5 19.5"
         stroke="white"
         strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function FilterIcon(props: SvgProps) {
+  return (
+    <Svg viewBox="0 0 24 24" fill="none" {...props}>
+      <Path
+        d="M3 6.75H21M6 12H18M10 17.25H14"
+        stroke="#FFFFFF"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function ClockIcon(props: SvgProps) {
+  return (
+    <Svg viewBox="0 0 16 16" fill="none" {...props}>
+      <Path
+        d="M8 3V8L11 9.5M14.5 8C14.5 11.5899 11.5899 14.5 8 14.5C4.41015 14.5 1.5 11.5899 1.5 8C1.5 4.41015 4.41015 1.5 8 1.5C11.5899 1.5 14.5 4.41015 14.5 8Z"
+        stroke="#040415"
+        strokeWidth={1.6}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -1662,6 +1966,260 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 22,
     marginHorizontal: 10
+  },
+  activitiesQuickButton: {
+    marginTop: 16,
+    alignSelf: "center",
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#353B43",
+    backgroundColor: "#242937",
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  activitiesQuickButtonText: {
+    color: "#FFFFFF",
+    fontFamily: "Noto Sans",
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20
+  },
+  activitiesScreen: {
+    flex: 1,
+    paddingBottom: 106
+  },
+  activitiesToolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 12
+  },
+  activitiesSegmented: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#353B43",
+    backgroundColor: "#232736",
+    flexDirection: "row",
+    padding: 0
+  },
+  activitiesSegmentButton: {
+    flex: 1,
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12
+  },
+  activitiesSegmentButtonActive: {
+    backgroundColor: "rgba(60, 180, 229, 0.55)"
+  },
+  activitiesSegmentText: {
+    color: "#FFFFFF",
+    fontFamily: "Noto Sans",
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20
+  },
+  activitiesSegmentTextActive: {
+    color: "#FFFFFF"
+  },
+  activitiesFilterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#353B43",
+    backgroundColor: "#242937",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  activitiesDatesRow: {
+    height: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12
+  },
+  activityDateChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#C9DEFF",
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  activityDateChipActive: {
+    width: 72,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+    borderTopRightRadius: 36,
+    borderBottomRightRadius: 36,
+    borderColor: "#A1C5F8",
+    backgroundColor: "#A1C5F8"
+  },
+  activityDateText: {
+    color: "#344054",
+    fontFamily: "Noto Sans",
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 18
+  },
+  activityDateTextActive: {
+    color: "#040415",
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 20
+  },
+  activitiesPanel: {
+    flex: 1,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#353B43",
+    backgroundColor: "#232536",
+    padding: 16
+  },
+  activitiesLoaderWrap: {
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10
+  },
+  activitiesLoaderText: {
+    color: "#C6CCE1",
+    fontFamily: "Noto Sans",
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 18
+  },
+  activitiesEmptyWrap: {
+    paddingTop: 24,
+    alignItems: "center"
+  },
+  activitiesEmptyTitle: {
+    color: "#FFFFFF",
+    fontFamily: "Noto Sans",
+    fontSize: 16,
+    fontWeight: "700",
+    lineHeight: 22
+  },
+  activitiesEmptyText: {
+    color: "#B8C0D7",
+    fontFamily: "Noto Sans",
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 20,
+    marginTop: 8,
+    textAlign: "center"
+  },
+  activitiesListContent: {
+    gap: 10,
+    paddingBottom: 8
+  },
+  activityCard: {
+    minHeight: 74,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#353B43",
+    backgroundColor: "#242937",
+    padding: 16,
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start"
+  },
+  activityIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#EEF5FF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  activityIconText: {
+    color: "#1E2E56",
+    fontFamily: "Noto Sans",
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 22
+  },
+  activityBody: {
+    flex: 1,
+    gap: 8
+  },
+  activityTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12
+  },
+  activityTitle: {
+    flex: 1,
+    color: "#040415",
+    fontFamily: "Noto Sans",
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 20
+  },
+  activityBottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  activityCategory: {
+    color: "#7F7F7F",
+    fontFamily: "Noto Sans",
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 14
+  },
+  activityTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4
+  },
+  activityTime: {
+    color: "#040415",
+    fontFamily: "Noto Sans",
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 14
+  },
+  activityStatusBadge: {
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2
+  },
+  activityStatusApproved: {
+    borderColor: "#ABEFC6",
+    backgroundColor: "#ECFDF3"
+  },
+  activityStatusDeclined: {
+    borderColor: "#FECDCA",
+    backgroundColor: "#FEF3F2"
+  },
+  activityStatusWaiting: {
+    borderColor: "#FEDF89",
+    backgroundColor: "#FEF0C7"
+  },
+  activityStatusText: {
+    fontFamily: "Noto Sans",
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 18,
+    textAlign: "center"
+  },
+  activityStatusTextApproved: {
+    color: "#067647"
+  },
+  activityStatusTextDeclined: {
+    color: "#B42318"
+  },
+  activityStatusTextWaiting: {
+    color: "#DC6803"
   },
   detailScrollContent: {
     paddingBottom: 124

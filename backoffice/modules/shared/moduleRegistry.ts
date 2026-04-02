@@ -106,15 +106,31 @@ export const moduleRegistry: Record<ModuleKey, ModuleConfig> = {
     service: bookingsService,
     columns: [
       { key: "id", header: "ID" },
+      { key: "eventType", header: "Activity" },
       { key: "spaceType", header: "Space" },
+      { key: "visibility", header: "Visibility" },
       { key: "bookingDate", header: "Date" },
       { key: "status", header: "Status" }
     ],
-    detailFields: ["requesterUserId", "apartmentId", "spaceType", "bookingDate", "startTime", "endTime", "status"],
+    detailFields: [
+      "requesterUserId",
+      "apartmentId",
+      "eventType",
+      "spaceType",
+      "visibility",
+      "message",
+      "bookingDate",
+      "startTime",
+      "endTime",
+      "status"
+    ],
     formFields: [
       { key: "requesterUserId", label: "Requester User ID" },
       { key: "apartmentId", label: "Apartment ID" },
+      { key: "eventType", label: "Activity Type" },
       { key: "spaceType", label: "Space Type" },
+      { key: "visibility", label: "Visibility (Public/Private)" },
+      { key: "message", label: "Message" },
       { key: "bookingDate", label: "Booking Date (YYYY-MM-DD)" },
       { key: "startTime", label: "Start Time" },
       { key: "endTime", label: "End Time" }

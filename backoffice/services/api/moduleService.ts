@@ -75,6 +75,8 @@ function normalizePayload<K extends ModuleKey>(moduleKey: K, payload: Partial<Mo
 
   if (moduleKey === "bookings") {
     basePayload.status = basePayload.status ?? "Pending";
+    basePayload.eventType = basePayload.eventType ?? "General";
+    basePayload.visibility = basePayload.visibility ?? "Public";
   }
 
   if (moduleKey === "notices") {

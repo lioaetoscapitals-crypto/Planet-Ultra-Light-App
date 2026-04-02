@@ -62,6 +62,9 @@ export type BookingEntity = EntityBase & {
   requesterUserId: string;
   apartmentId: string;
   spaceType: "Community Hall" | "Co-Work Space" | "Gym" | "Pool" | "Court";
+  eventType: string;
+  visibility: "Public" | "Private";
+  message?: string;
   bookingDate: string;
   startTime: string;
   endTime: string;

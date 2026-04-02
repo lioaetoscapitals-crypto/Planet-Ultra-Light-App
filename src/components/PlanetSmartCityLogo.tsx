@@ -1,80 +1,33 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 
 type Props = {
   compact?: boolean;
   width?: number;
 };
 
-function Dot({ color, size = 8 }: { color: string; size?: number }) {
-  return <View style={[styles.dot, { backgroundColor: color, width: size, height: size, borderRadius: size / 2 }]} />;
-}
+const LOGO_SOURCE = require("../../assets/branding/planet-smart-city-logo.png");
+const LOGO_RATIO = 1186 / 439;
 
 export default function PlanetSmartCityLogo({ compact = false, width }: Props) {
-  const baseWidth = compact ? 180 : 252;
+  const baseWidth = compact ? 220 : 286;
   const resolvedWidth = width ?? baseWidth;
-  const scale = resolvedWidth / 252;
-  const dotSize = Math.max(4, 8 * scale);
-  const titleSize = Math.max(16, 28 * scale);
-  const subtitleSize = Math.max(11, 17 * scale);
+  const resolvedHeight = resolvedWidth / LOGO_RATIO;
 
   return (
-    <View style={[styles.row, { width: resolvedWidth }]}>
-      <View style={styles.iconWrap}>
-        <View style={styles.iconRow}>
-          <Dot color="#FF6B6B" size={dotSize} />
-        </View>
-        <View style={styles.iconRow}>
-          <Dot color="#E93A56" size={dotSize} />
-          <Dot color="#FF4D6D" size={dotSize} />
-          <Dot color="#F5B041" size={dotSize} />
-        </View>
-        <View style={styles.iconRow}>
-          <Dot color="#35B7EA" size={dotSize} />
-          <Dot color="#2EA8DF" size={dotSize} />
-          <Dot color="#F4D03F" size={dotSize} />
-          <Dot color="#D4AC0D" size={dotSize} />
-        </View>
-        <View style={styles.iconRow}>
-          <Dot color="#1594CC" size={dotSize} />
-          <Dot color="#4BC27D" size={dotSize} />
-        </View>
-      </View>
-      <View style={styles.textWrap}>
-        <Text style={[styles.title, { fontSize: titleSize }]}>PLANET</Text>
-        <Text style={[styles.subtitle, { fontSize: subtitleSize }]}>smart city</Text>
-      </View>
+    <View style={[styles.container, { width: resolvedWidth, height: resolvedHeight }]}>
+      <Image source={LOGO_SOURCE} style={styles.image} resizeMode="contain" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  container: {
+    alignSelf: "center",
+    overflow: "visible"
   },
-  iconWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconRow: {
-    flexDirection: "row",
-    gap: 3,
-    marginVertical: 1,
-  },
-  textWrap: {
-    flexShrink: 1,
-  },
-  dot: {},
-  title: {
-    color: "#F5F7FB",
-    fontWeight: "800",
-    letterSpacing: 0.4,
-  },
-  subtitle: {
-    color: "#C7D1E6",
-    fontWeight: "700",
-    marginTop: -2,
-  },
+  image: {
+    width: "100%",
+    height: "100%"
+  }
 });

@@ -124,17 +124,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  width: 100%;
+  overflow: visible;
 }
 
 .bo-planet-logo {
   display: block;
-  width: 248px;
+  width: 240px;
   max-width: 100%;
   height: auto;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .bo-planet-logo-compact {
-  width: 188px;
+  width: 200px;
 }
 
 .bo-sidebar-nav {

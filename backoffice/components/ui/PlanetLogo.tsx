@@ -1,4 +1,4 @@
-import planetLogo from "../../assets/branding/planet-smart-city-logo.svg";
+import planetLogo from "../../assets/branding/planet-smart-city-logo.png";
 
 type Props = {
   className?: string;
@@ -10,6 +10,7 @@ export default function PlanetLogo({ className = "", compact = false }: Props) {
     <img
       src={planetLogo}
       alt="Planet Smart City"
+      loading="eager"
       className={`bo-planet-logo ${compact ? "bo-planet-logo-compact" : ""} ${className}`.trim()}
     />
   );
