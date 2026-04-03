@@ -494,6 +494,8 @@ export default function PlanetScreen() {
     Array<{ identifier: string; name: string; language: string }>
   >([]);
   const previousBookingsRef = useRef<Record<string, { status: string; reason?: string; updatedAt: string }>>({});
+  const hasHydratedNotificationFeedRef = useRef(false);
+  const seenNotificationIdsRef = useRef<Set<string>>(new Set());
 
   const selectedSpace = spaces.find((space) => space.id === selectedSpaceId) ?? spaces[0];
   const selectedSpaceGallery = selectedSpace.gallerySources.length > 0 ? selectedSpace.gallerySources : [selectedSpace.imageSource];
@@ -812,6 +814,21 @@ export default function PlanetScreen() {
       setIsNotificationsLoading(true);
       const response = await listResidentNotificationsApi();
       const apiItems = response.map(mapNotificationApiItem);
+      if (!hasHydratedNotificationFeedRef.current) {
+        hasHydratedNotificationFeedRef.current = true;
+        apiItems.forEach((item) => seenNotificationIdsRef.current.add(item.id));
+      } else {
+        const newUnread = apiItems.filter((item) => !item.read && !seenNotificationIdsRef.current.has(item.id));
+        newUnread.forEach((item) => seenNotificationIdsRef.current.add(item.id));
+        if (newUnread.length > 0) {
+          const latest = newUnread[0];
+          const extraCount = newUnread.length - 1;
+          Alert.alert(
+            latest.title,
+            extraCount > 0 ? `${latest.body}\n\n+${extraCount} more notification(s)` : latest.body
+          );
+        }
+      }
       setNotifications((previous) => {
         const merged = [...apiItems];
         const existingIds = new Set(apiItems.map((item) => item.id));
@@ -839,6 +856,10 @@ export default function PlanetScreen() {
 
   useEffect(() => {
     void loadNotifications();
+    const timer = setInterval(() => {
+      void loadNotifications();
+    }, 10000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -1204,35 +1225,60 @@ export default function PlanetScreen() {
           ) : screenMode === "activities" ? (
             <View style={[styles.activitiesScreen, { backgroundColor: theme.screenBg }]}>
               <View style={styles.flowHeader}>
-                <Pressable onPress={() => setScreenMode("spaceList")} style={styles.flowBackButton}>
-                  <Text style={styles.flowBackButtonText}>‹</Text>
+                <Pressable
+                  onPress={() => setScreenMode("spaceList")}
+                  style={[styles.flowBackButton, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}
+                >
+                  <Text style={[styles.flowBackButtonText, { color: theme.textPrimary }]}>‹</Text>
                 </Pressable>
-                <Text style={styles.flowHeaderTitle}>Activities</Text>
+                <Text style={[styles.flowHeaderTitle, { color: theme.textPrimary }]}>Activities</Text>
               </View>
 
               <View style={styles.activitiesToolbar}>
-                <View style={styles.activitiesSegmented}>
-                  {activitiesUi.tabs.map((tab) => (
-                    <Pressable
-                      key={tab.id}
-                      style={[styles.activitiesSegmentButton, activityScope === tab.id && styles.activitiesSegmentButtonActive]}
-                      onPress={() => setActivityScope(tab.id)}
-                    >
-                      <Text style={[styles.activitiesSegmentText, activityScope === tab.id && styles.activitiesSegmentTextActive]}>
-                        {tab.label}
-                      </Text>
-                    </Pressable>
-                  ))}
+                <View style={styles.activitiesSegmentedWrap}>
+                  <View style={[styles.activitiesSegmented, isLight && { backgroundColor: theme.elevatedBg, borderColor: theme.cardBorder }]}>
+                    {activitiesUi.tabs.map((tab) => (
+                      <Pressable
+                        key={tab.id}
+                        style={[
+                          styles.activitiesSegmentButton,
+                          activityScope === tab.id && styles.activitiesSegmentButtonActive,
+                          isLight && activityScope === tab.id && { backgroundColor: theme.primaryButtonBg }
+                        ]}
+                        onPress={() => setActivityScope(tab.id)}
+                      >
+                        <Text
+                          style={[
+                            styles.activitiesSegmentText,
+                            { color: isLight ? theme.textPrimary : "#FFFFFF" },
+                            activityScope === tab.id && styles.activitiesSegmentTextActive,
+                            isLight && activityScope === tab.id && { color: theme.primaryButtonText }
+                          ]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {tab.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
                 </View>
                 <Pressable
-                  style={styles.activitiesFilterButton}
+                  style={[styles.activitiesFilterButton, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}
                   onPress={() => setActiveSheet("statusFilter")}
                 >
                   <FilterIcon width={20} height={20} color={theme.textSecondary} />
                 </Pressable>
               </View>
 
-              <View style={styles.activitiesDatesRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.activitiesDatesScroller}
+                contentContainerStyle={styles.activitiesDatesRow}
+                bounces={false}
+                alwaysBounceHorizontal={false}
+              >
                 <ClockFastForwardIcon width={24} height={24} color={theme.textSecondary} />
                 {ACTIVITY_DATES.map((dateItem) => (
                   <Pressable
@@ -1240,20 +1286,26 @@ export default function PlanetScreen() {
                     onPress={() => setSelectedActivityDate(dateItem)}
                     style={[
                       styles.activityDateChip,
-                      selectedActivityDate === dateItem && styles.activityDateChipActive
+                      isLight && { borderColor: theme.cardBorder, backgroundColor: theme.cardBg },
+                      selectedActivityDate === dateItem && styles.activityDateChipActive,
+                      isLight && selectedActivityDate === dateItem && { borderColor: theme.primaryButtonBg, backgroundColor: theme.primaryButtonBg }
                     ]}
                   >
                     <Text
                       style={[
                         styles.activityDateText,
-                        selectedActivityDate === dateItem && styles.activityDateTextActive
+                        { color: isLight ? theme.textSecondary : "#344054" },
+                        selectedActivityDate === dateItem && styles.activityDateTextActive,
+                        isLight && selectedActivityDate === dateItem && { color: theme.primaryButtonText }
                       ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
                     >
                       {dateItem}
                     </Text>
                   </Pressable>
                 ))}
-              </View>
+              </ScrollView>
 
               <View style={[styles.activitiesPanel, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
                 {isActivitiesLoading ? (
@@ -1879,7 +1931,7 @@ const styles = StyleSheet.create({
   pageInset: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 56 : 20
+    paddingTop: Platform.OS === "ios" ? 44 : 20
   },
   pageInsetHome: {
     flex: 1
@@ -2238,7 +2290,7 @@ const styles = StyleSheet.create({
     borderRadius: 4
   },
   scrollContent: {
-    paddingBottom: 150
+    paddingBottom: 120
   },
   cardGrid: {
     flexDirection: "row",
@@ -2247,7 +2299,7 @@ const styles = StyleSheet.create({
     rowGap: 18
   },
   moduleCard: {
-    width: "47.5%",
+    width: "48%",
     minHeight: 220,
     borderRadius: 26,
     padding: 14,
@@ -2293,7 +2345,7 @@ const styles = StyleSheet.create({
   notificationScreen: {
     flex: 1,
     paddingTop: 8,
-    paddingBottom: 140
+    paddingBottom: 116
   },
   notificationHeader: {
     flexDirection: "row",
@@ -2371,7 +2423,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     paddingTop: 8,
-    marginBottom: 20
+    marginBottom: 16
   },
   flowBackButton: {
     width: 44,
@@ -2409,7 +2461,7 @@ const styles = StyleSheet.create({
     rowGap: 18
   },
   spaceTile: {
-    width: "47.5%"
+    width: "48%"
   },
   spaceTileImageWrap: {
     height: 112,
@@ -2436,7 +2488,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     textAlign: "center",
-    marginTop: 22,
+    marginTop: 14,
     marginHorizontal: 10
   },
   activitiesQuickButton: {
@@ -2460,17 +2512,23 @@ const styles = StyleSheet.create({
   },
   activitiesScreen: {
     flex: 1,
-    paddingBottom: 106
+    paddingBottom: 114
   },
   activitiesToolbar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 12
+    width: "100%",
+    minHeight: 48,
+    gap: 8,
+    marginBottom: 16
+  },
+  activitiesSegmentedWrap: {
+    width: "80%",
+    minWidth: 0
   },
   activitiesSegmented: {
-    flex: 1,
+    width: "100%",
     height: 48,
     borderRadius: 12,
     borderWidth: 1,
@@ -2478,16 +2536,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#232736",
     flexDirection: "row",
     padding: 0,
-    minWidth: 0,
-    marginRight: 4
+    minWidth: 0
   },
   activitiesSegmentButton: {
-    flex: 1,
+    width: "50%",
     height: 48,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 12,
-    paddingHorizontal: 8
+    paddingHorizontal: 8,
+    minWidth: 0
   },
   activitiesSegmentButtonActive: {
     backgroundColor: "rgba(60, 180, 229, 0.55)"
@@ -2497,27 +2555,38 @@ const styles = StyleSheet.create({
     fontFamily: "Noto Sans",
     fontSize: 14,
     fontWeight: "600",
-    lineHeight: 20
+    lineHeight: 20,
+    textAlign: "center",
+    width: "100%"
   },
   activitiesSegmentTextActive: {
     color: "#FFFFFF"
   },
   activitiesFilterButton: {
-    width: 44,
-    height: 44,
+    width: "20%",
+    minWidth: 44,
+    maxWidth: 64,
+    height: 48,
     borderRadius: 22,
     borderWidth: 1,
     borderColor: "#353B43",
     backgroundColor: "#242937",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    flexShrink: 0
   },
   activitiesDatesRow: {
-    height: 36,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12
+    gap: 10,
+    marginBottom: 16,
+    paddingVertical: 2,
+    paddingRight: 16
+  },
+  activitiesDatesScroller: {
+    width: "100%",
+    flexGrow: 0,
+    minHeight: 44
   },
   activityDateChip: {
     width: 36,
@@ -2527,7 +2596,8 @@ const styles = StyleSheet.create({
     borderColor: "#C9DEFF",
     backgroundColor: "#FFFFFF",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    flexShrink: 0
   },
   activityDateChipActive: {
     width: 72,
@@ -2536,7 +2606,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 36,
     borderBottomRightRadius: 36,
     borderColor: "#A1C5F8",
-    backgroundColor: "#A1C5F8"
+    backgroundColor: "#A1C5F8",
+    flexShrink: 0
   },
   activityDateText: {
     color: "#344054",
@@ -2557,7 +2628,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#353B43",
     backgroundColor: "#232536",
-    padding: 16
+    padding: 14
   },
   activitiesLoaderWrap: {
     paddingVertical: 16,
@@ -2602,7 +2673,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#353B43",
     backgroundColor: "#242937",
-    padding: 16,
+    padding: 14,
     flexDirection: "row",
     gap: 10,
     alignItems: "flex-start"
@@ -2708,6 +2779,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#242937",
     padding: 18,
     gap: 10
+  },
+  activityDetailHeroWrap: {
+    gap: 12,
+    marginBottom: 2
+  },
+  activityDetailHeroImage: {
+    width: "100%",
+    height: 140,
+    borderRadius: 14
   },
   activityDetailTitle: {
     color: "#FFFFFF",
@@ -2902,7 +2982,7 @@ const styles = StyleSheet.create({
     lineHeight: 20
   },
   detailScrollContent: {
-    paddingBottom: 124
+    paddingBottom: 108
   },
   detailHeroCard: {
     backgroundColor: "#151A24",
@@ -3027,7 +3107,7 @@ const styles = StyleSheet.create({
     marginTop: 12
   },
   formScrollContent: {
-    paddingBottom: 140
+    paddingBottom: 112
   },
   bookingSelectedCard: {
     backgroundColor: "#151A24",
@@ -3080,7 +3160,7 @@ const styles = StyleSheet.create({
     padding: 18,
     borderWidth: 1,
     borderColor: "#232A39",
-    marginTop: 16
+    marginTop: 12
   },
   formRow: {
     marginBottom: 16
@@ -3109,6 +3189,26 @@ const styles = StyleSheet.create({
   },
   repeatSection: {
     marginBottom: 16
+  },
+  repeatGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10
+  },
+  repeatGridItem: {
+    width: "48%",
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8
+  },
+  repeatGridItemText: {
+    fontFamily: "Noto Sans",
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 18
   },
   repeatOptions: {
     gap: 10
