@@ -29,6 +29,7 @@ import SocietiesListScreen from "../../modules/societies/screens/SocietiesListSc
 import SocietiesDetailScreen from "../../modules/societies/screens/SocietiesDetailScreen";
 import SocietiesFormScreen from "../../modules/societies/screens/SocietiesFormScreen";
 import RoleRoute from "./RoleRoute";
+import SectionPlaceholderScreen from "../../modules/shared/screens/SectionPlaceholderScreen";
 
 export default function AppRouter() {
   return (
@@ -45,6 +46,53 @@ export default function AppRouter() {
         >
           <Route index element={<Navigate to={ROUTES.dashboard} replace />} />
           <Route path={ROUTES.dashboard} element={<DashboardScreen />} />
+
+          <Route path={ROUTES.approvalsSignup} element={<RoleRoute moduleKey="users"><UsersListScreen /></RoleRoute>} />
+          <Route path={ROUTES.approvalsLease} element={<RoleRoute moduleKey="users"><SectionPlaceholderScreen title="Lease Approvals" /></RoleRoute>} />
+          <Route path={ROUTES.approvalsActivities} element={<RoleRoute moduleKey="bookings"><BookingsListScreen /></RoleRoute>} />
+          <Route path={ROUTES.approvalsTools} element={<RoleRoute moduleKey="users"><SectionPlaceholderScreen title="Tools Approvals" /></RoleRoute>} />
+          <Route path={ROUTES.approvalsMarketPromos} element={<RoleRoute moduleKey="market"><MarketListScreen /></RoleRoute>} />
+          <Route path={ROUTES.approvalsMarketPosts} element={<RoleRoute moduleKey="market"><NoticesListScreen /></RoleRoute>} />
+
+          <Route path={ROUTES.operationsTowers} element={<RoleRoute moduleKey="apartments"><ApartmentsListScreen /></RoleRoute>} />
+          <Route path={ROUTES.operationsApartments} element={<RoleRoute moduleKey="apartments"><ApartmentsListScreen /></RoleRoute>} />
+          <Route path={ROUTES.operationsUsers} element={<RoleRoute moduleKey="users"><UsersListScreen /></RoleRoute>} />
+          <Route path={ROUTES.operationsLocks} element={<RoleRoute moduleKey="gate"><GateListScreen /></RoleRoute>} />
+          <Route path={ROUTES.operationsKeyfobs} element={<RoleRoute moduleKey="gate"><SectionPlaceholderScreen title="Keyfobs" /></RoleRoute>} />
+          <Route path={ROUTES.operationsSecurity} element={<RoleRoute moduleKey="gate"><GateListScreen /></RoleRoute>} />
+
+          <Route path={ROUTES.societyUsefulInformation} element={<RoleRoute moduleKey="societies"><SectionPlaceholderScreen title="Useful Information" /></RoleRoute>} />
+          <Route path={ROUTES.societySmartSolutions} element={<RoleRoute moduleKey="societies"><SectionPlaceholderScreen title="Smart Solutions" /></RoleRoute>} />
+          <Route path={ROUTES.societyAmenities} element={<RoleRoute moduleKey="bookings"><BookingsListScreen /></RoleRoute>} />
+          <Route path={ROUTES.societyTools} element={<RoleRoute moduleKey="societies"><SectionPlaceholderScreen title="Society Tools" /></RoleRoute>} />
+          <Route path={ROUTES.societySettings} element={<RoleRoute moduleKey="societies"><SocietiesListScreen /></RoleRoute>} />
+          <Route path={ROUTES.societyLiveCamera} element={<RoleRoute moduleKey="societies"><SectionPlaceholderScreen title="Live Camera" /></RoleRoute>} />
+
+          <Route path={ROUTES.communicationNotices} element={<RoleRoute moduleKey="notices"><NoticesListScreen /></RoleRoute>} />
+          <Route path={ROUTES.communicationNews} element={<RoleRoute moduleKey="notices"><SectionPlaceholderScreen title="News" /></RoleRoute>} />
+          <Route path={ROUTES.communicationNotifications} element={<RoleRoute moduleKey="notices"><SectionPlaceholderScreen title="Notifications" /></RoleRoute>} />
+          <Route path={ROUTES.communicationDocStorage} element={<RoleRoute moduleKey="notices"><SectionPlaceholderScreen title="Doc Storage" /></RoleRoute>} />
+          <Route path={ROUTES.communicationGroups} element={<RoleRoute moduleKey="notices"><SectionPlaceholderScreen title="Groups" /></RoleRoute>} />
+          <Route path={ROUTES.communicationPollsAndSurvey} element={<RoleRoute moduleKey="notices"><SectionPlaceholderScreen title="Polls and Survey" /></RoleRoute>} />
+          <Route path={ROUTES.communicationPlanetAds} element={<RoleRoute moduleKey="notices"><SectionPlaceholderScreen title="Planet Ads" /></RoleRoute>} />
+          <Route path={ROUTES.communicationNewsFeeds} element={<RoleRoute moduleKey="notices"><SectionPlaceholderScreen title="News Feeds" /></RoleRoute>} />
+
+          <Route path={ROUTES.paymentsInvoices} element={<RoleRoute moduleKey="bookings"><SectionPlaceholderScreen title="Invoices" /></RoleRoute>} />
+          <Route path={ROUTES.paymentsReceipts} element={<RoleRoute moduleKey="bookings"><SectionPlaceholderScreen title="Receipts" /></RoleRoute>} />
+          <Route path={ROUTES.paymentsReports} element={<RoleRoute moduleKey="bookings"><SectionPlaceholderScreen title="Reports" /></RoleRoute>} />
+
+          <Route path={ROUTES.gateVisitorsLog} element={<RoleRoute moduleKey="gate"><GateListScreen /></RoleRoute>} />
+          <Route path={ROUTES.gateGuards} element={<RoleRoute moduleKey="gate"><GateListScreen /></RoleRoute>} />
+          <Route path={ROUTES.gateLinkedDevices} element={<RoleRoute moduleKey="gate"><SectionPlaceholderScreen title="Linked Devices" /></RoleRoute>} />
+          <Route path={ROUTES.gateDailyHelp} element={<RoleRoute moduleKey="gate"><SectionPlaceholderScreen title="Daily Help" /></RoleRoute>} />
+
+          <Route path={ROUTES.settingsCities} element={<RoleRoute moduleKey="societies"><SectionPlaceholderScreen title="Cities" /></RoleRoute>} />
+          <Route path={ROUTES.settingsSocieties} element={<RoleRoute moduleKey="societies"><SocietiesListScreen /></RoleRoute>} />
+          <Route path={ROUTES.settingsRoles} element={<RoleRoute moduleKey="societies"><SectionPlaceholderScreen title="Roles" /></RoleRoute>} />
+          <Route path={ROUTES.settingsLogs} element={<RoleRoute moduleKey="societies"><SectionPlaceholderScreen title="Logs" /></RoleRoute>} />
+          <Route path={ROUTES.settingsDeliveryItems} element={<RoleRoute moduleKey="societies"><SectionPlaceholderScreen title="Delivery Items" /></RoleRoute>} />
+          <Route path={ROUTES.settingsCategories} element={<RoleRoute moduleKey="societies"><SectionPlaceholderScreen title="Categories" /></RoleRoute>} />
+
           <Route path={ROUTES.gate} element={<RoleRoute moduleKey="gate"><GateListScreen /></RoleRoute>} />
           <Route path={`${ROUTES.gate}/new`} element={<RoleRoute moduleKey="gate"><GateFormScreen /></RoleRoute>} />
           <Route path={`${ROUTES.gate}/:id`} element={<RoleRoute moduleKey="gate"><GateDetailScreen /></RoleRoute>} />

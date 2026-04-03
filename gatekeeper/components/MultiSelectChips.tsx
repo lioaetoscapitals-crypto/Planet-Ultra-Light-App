@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { AnimatedPressable } from "./AnimatedPressable";
 
 type Props = {
   items: string[];
@@ -12,9 +13,14 @@ export function MultiSelectChips({ items, selected, onToggle }: Props) {
       {items.map((item) => {
         const active = selected.includes(item);
         return (
-          <Pressable key={item} onPress={() => onToggle(item)} style={[styles.chip, active && styles.activeChip]}>
+          <AnimatedPressable
+            key={item}
+            onPress={() => onToggle(item)}
+            scaleTo={0.94}
+            animatedStyle={[styles.chip, active && styles.activeChip]}
+          >
             <Text style={[styles.text, active && styles.activeText]}>{item}</Text>
-          </Pressable>
+          </AnimatedPressable>
         );
       })}
     </View>

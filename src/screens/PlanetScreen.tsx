@@ -27,6 +27,7 @@ import { useThemeStore } from "../store/themeStore";
 import { profileThemes } from "../theme/profileTheme";
 import ThemedBottomSheet, { BottomSheetOption } from "../components/common/ThemedBottomSheet";
 import ThemedInputBottomSheet from "../components/common/ThemedInputBottomSheet";
+import AnimatedPressable from "../components/common/AnimatedPressable";
 
 type ScreenMode = "home" | "notifications" | "spaceList" | "spaceDetail" | "bookingForm" | "activities" | "activityDetail" | "profile";
 type ActivityScope = "all" | "my";
@@ -1007,52 +1008,53 @@ export default function PlanetScreen() {
                     </Text>
                   </View>
 
-                  <Pressable
+                  <AnimatedPressable
                     onPress={() => setScreenMode("notifications")}
-                    style={[styles.figmaBellWrap, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}
+                    scaleTo={0.9}
+                    animatedStyle={[styles.figmaBellWrap, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}
                   >
                     <BellIcon width={24} height={24} color={theme.textSecondary} />
                     <View style={styles.figmaBadge}>
                       <Text style={styles.figmaBadgeText}>{unreadNotificationCount}</Text>
                     </View>
-                  </Pressable>
+                  </AnimatedPressable>
 
-                  <Pressable style={styles.figmaAvatar} onPress={() => setScreenMode("profile")}>
+                  <AnimatedPressable scaleTo={0.92} animatedStyle={styles.figmaAvatar} onPress={() => setScreenMode("profile")}>
                     <Text style={styles.figmaAvatarInitial}>A</Text>
-                  </Pressable>
+                  </AnimatedPressable>
                 </View>
               </View>
 
-              <Pressable style={styles.cardGate} onPress={() => {}}>
+              <AnimatedPressable scaleTo={0.98} animatedStyle={styles.cardGate} onPress={() => {}}>
                 <GateArtwork width={129.28} height={130} style={styles.cardGateArt} />
                 <Text style={styles.cardTitleCream}>Gate</Text>
-              </Pressable>
+              </AnimatedPressable>
 
-              <Pressable style={styles.cardSpaceBooking} onPress={() => setScreenMode("spaceList")}>
+              <AnimatedPressable scaleTo={0.98} animatedStyle={styles.cardSpaceBooking} onPress={() => setScreenMode("spaceList")}>
                 <SpaceArtwork width={140.56} height={65} style={styles.cardSpaceArt} />
                 <Text style={styles.cardTitleLight}>Space Booking</Text>
-              </Pressable>
+              </AnimatedPressable>
 
-              <Pressable style={styles.cardVisitors} onPress={() => {}}>
+              <AnimatedPressable scaleTo={0.98} animatedStyle={styles.cardVisitors} onPress={() => {}}>
                 <VisitorsArtwork width={148} height={91.45} style={styles.cardVisitorsArt} />
                 <Text style={styles.cardTitleCream}>Notices</Text>
-              </Pressable>
+              </AnimatedPressable>
 
-              <Pressable style={styles.cardPost} onPress={() => {}}>
+              <AnimatedPressable scaleTo={0.98} animatedStyle={styles.cardPost} onPress={() => {}}>
                 <PostArtwork width={117.8} height={113.27} style={styles.cardPostArt} />
                 <Text style={styles.cardTitleLight}>Post</Text>
-              </Pressable>
+              </AnimatedPressable>
 
-              <Pressable style={styles.cardReading} onPress={() => {}}>
+              <AnimatedPressable scaleTo={0.98} animatedStyle={styles.cardReading} onPress={() => {}}>
                 <ReadingArtwork width={119} height={130.95} style={styles.cardReadingArt} />
                 <Text style={styles.cardTitleCream}>Reading News</Text>
-              </Pressable>
+              </AnimatedPressable>
 
-              <Pressable style={styles.cardXyz} onPress={() => {}}>
+              <AnimatedPressable scaleTo={0.98} animatedStyle={styles.cardXyz} onPress={() => {}}>
                 <View style={styles.cardXyzTopBand} />
                 <MarketArtwork width={160} height={90} />
                 <Text style={styles.cardTitleXyz}>XYZ</Text>
-              </Pressable>
+              </AnimatedPressable>
             </View>
           ) : screenMode === "spaceList" ? (
             <View style={styles.flowScreen}>
@@ -1060,20 +1062,21 @@ export default function PlanetScreen() {
               <View style={[styles.listCardWrap, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
                 <View style={styles.spaceGrid}>
                   {spaces.map((space) => (
-                    <Pressable
+                    <AnimatedPressable
                       key={space.id}
                       onPress={() => {
                         setSelectedSpaceId(space.id);
                         setSelectedSpaceGalleryIndex(0);
                         setScreenMode("spaceDetail");
                       }}
-                      style={styles.spaceTile}
+                      scaleTo={0.98}
+                      animatedStyle={styles.spaceTile}
                     >
                       <View style={[styles.spaceTileImageWrap, { backgroundColor: space.background }]}>
                         <Image source={space.imageSource} style={styles.spaceTileImage} resizeMode="cover" />
                       </View>
                       <Text style={styles.spaceTileText}>{space.title}</Text>
-                    </Pressable>
+                    </AnimatedPressable>
                   ))}
                 </View>
               </View>
@@ -1081,9 +1084,9 @@ export default function PlanetScreen() {
                 Press the mic and mention all your booking details like event date, time, duration,
                 repeat and occasion.
               </Text>
-              <Pressable style={styles.activitiesQuickButton} onPress={() => setScreenMode("activities")}>
+              <AnimatedPressable scaleTo={0.98} animatedStyle={styles.activitiesQuickButton} onPress={() => setScreenMode("activities")}>
                 <Text style={styles.activitiesQuickButtonText}>View Activities</Text>
-              </Pressable>
+              </AnimatedPressable>
             </View>
           ) : screenMode === "spaceDetail" ? (
             <ScrollView
@@ -1100,17 +1103,18 @@ export default function PlanetScreen() {
                 </View>
                 <View style={styles.detailThumbRow}>
                   {selectedSpaceGallery.map((galleryImage, imageIndex) => (
-                    <Pressable
+                    <AnimatedPressable
                       key={`${selectedSpace.id}-gallery-${imageIndex}`}
                       onPress={() => setSelectedSpaceGalleryIndex(imageIndex)}
-                      style={[
+                      scaleTo={0.92}
+                      animatedStyle={[
                         styles.detailThumb,
                         selectedSpaceGalleryIndex === imageIndex && styles.detailThumbSelected,
                         { backgroundColor: selectedSpace.background }
                       ]}
                     >
                       <Image source={galleryImage} style={styles.detailThumbImage} resizeMode="cover" />
-                    </Pressable>
+                    </AnimatedPressable>
                   ))}
                 </View>
                 <Text style={[styles.detailSpaceTitle, { color: theme.textPrimary }]}>{selectedSpace.title}</Text>
@@ -1185,10 +1189,11 @@ export default function PlanetScreen() {
                   <Text style={[styles.formFieldLabel, { color: theme.textSecondary }]}>Repeat</Text>
                   <View style={styles.repeatGrid}>
                     {REPEAT_OPTIONS.map((option) => (
-                      <Pressable
+                      <AnimatedPressable
                         key={option.id}
                         onPress={() => setRepeatMode(option.id)}
-                        style={[
+                        scaleTo={0.98}
+                        animatedStyle={[
                           styles.repeatGridItem,
                           {
                             backgroundColor: repeatMode === option.id ? theme.primaryButtonBg : theme.elevatedBg,
@@ -1204,7 +1209,7 @@ export default function PlanetScreen() {
                         >
                           {option.label}
                         </Text>
-                      </Pressable>
+                      </AnimatedPressable>
                     ))}
                   </View>
                 </View>
@@ -1225,12 +1230,13 @@ export default function PlanetScreen() {
           ) : screenMode === "activities" ? (
             <View style={[styles.activitiesScreen, { backgroundColor: theme.screenBg }]}>
               <View style={styles.flowHeader}>
-                <Pressable
+                <AnimatedPressable
                   onPress={() => setScreenMode("spaceList")}
-                  style={[styles.flowBackButton, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}
+                  scaleTo={0.92}
+                  animatedStyle={[styles.flowBackButton, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}
                 >
                   <Text style={[styles.flowBackButtonText, { color: theme.textPrimary }]}>‹</Text>
-                </Pressable>
+                </AnimatedPressable>
                 <Text style={[styles.flowHeaderTitle, { color: theme.textPrimary }]}>Activities</Text>
               </View>
 
@@ -1238,9 +1244,10 @@ export default function PlanetScreen() {
                 <View style={styles.activitiesSegmentedWrap}>
                   <View style={[styles.activitiesSegmented, isLight && { backgroundColor: theme.elevatedBg, borderColor: theme.cardBorder }]}>
                     {activitiesUi.tabs.map((tab) => (
-                      <Pressable
+                      <AnimatedPressable
                         key={tab.id}
-                        style={[
+                        scaleTo={0.98}
+                        animatedStyle={[
                           styles.activitiesSegmentButton,
                           activityScope === tab.id && styles.activitiesSegmentButtonActive,
                           isLight && activityScope === tab.id && { backgroundColor: theme.primaryButtonBg }
@@ -1259,16 +1266,17 @@ export default function PlanetScreen() {
                         >
                           {tab.label}
                         </Text>
-                      </Pressable>
+                      </AnimatedPressable>
                     ))}
                   </View>
                 </View>
-                <Pressable
-                  style={[styles.activitiesFilterButton, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}
+                <AnimatedPressable
                   onPress={() => setActiveSheet("statusFilter")}
+                  scaleTo={0.92}
+                  animatedStyle={[styles.activitiesFilterButton, isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}
                 >
                   <FilterIcon width={20} height={20} color={theme.textSecondary} />
-                </Pressable>
+                </AnimatedPressable>
               </View>
 
               <ScrollView
@@ -1281,10 +1289,11 @@ export default function PlanetScreen() {
               >
                 <ClockFastForwardIcon width={24} height={24} color={theme.textSecondary} />
                 {ACTIVITY_DATES.map((dateItem) => (
-                  <Pressable
+                  <AnimatedPressable
                     key={dateItem}
                     onPress={() => setSelectedActivityDate(dateItem)}
-                    style={[
+                    scaleTo={0.93}
+                    animatedStyle={[
                       styles.activityDateChip,
                       isLight && { borderColor: theme.cardBorder, backgroundColor: theme.cardBg },
                       selectedActivityDate === dateItem && styles.activityDateChipActive,
@@ -1303,7 +1312,7 @@ export default function PlanetScreen() {
                     >
                       {dateItem}
                     </Text>
-                  </Pressable>
+                  </AnimatedPressable>
                 ))}
               </ScrollView>
 
@@ -1325,9 +1334,10 @@ export default function PlanetScreen() {
                     bounces={false}
                   >
                     {filteredActivities.map((activity) => (
-                      <Pressable
+                      <AnimatedPressable
                         key={activity.id}
-                        style={[styles.activityCard, isLight && { backgroundColor: theme.elevatedBg, borderColor: theme.cardBorder }]}
+                        scaleTo={0.985}
+                        animatedStyle={[styles.activityCard, isLight && { backgroundColor: theme.elevatedBg, borderColor: theme.cardBorder }]}
                         onPress={() => openActivityDetails(activity.id)}
                       >
                         <View style={styles.activityIconCircle}>
@@ -1348,7 +1358,7 @@ export default function PlanetScreen() {
                             </View>
                           </View>
                         </View>
-                      </Pressable>
+                      </AnimatedPressable>
                     ))}
                   </ScrollView>
                 )}
@@ -1384,9 +1394,9 @@ export default function PlanetScreen() {
                   ) : null}
                   {selectedActivityBooking.requesterUserId === DEFAULT_BOOKING_USER &&
                   toActivityStatus(selectedActivityBooking.status) === "waiting" ? (
-                    <Pressable style={styles.activityDetailEditButton} onPress={() => startEditActivity(selectedActivityBooking.id)}>
+                    <AnimatedPressable scaleTo={0.98} animatedStyle={styles.activityDetailEditButton} onPress={() => startEditActivity(selectedActivityBooking.id)}>
                       <Text style={styles.activityDetailEditButtonText}>Edit Activity</Text>
-                    </Pressable>
+                    </AnimatedPressable>
                   ) : null}
                 </View>
               ) : (
@@ -1401,9 +1411,9 @@ export default function PlanetScreen() {
             <View style={[styles.notificationScreen, { backgroundColor: theme.screenBg }]}>
               <View style={styles.notificationHeader}>
                 <Text style={[styles.notificationTitle, { color: theme.textPrimary }]}>Notifications</Text>
-                <Pressable onPress={() => setScreenMode("home")} style={styles.closeButton}>
+                <AnimatedPressable scaleTo={0.95} onPress={() => setScreenMode("home")} animatedStyle={styles.closeButton}>
                   <Text style={styles.closeButtonText}>Done</Text>
-                </Pressable>
+                </AnimatedPressable>
               </View>
 
               <ScrollView
@@ -1425,7 +1435,7 @@ export default function PlanetScreen() {
                   </View>
                 ) : (
                   notifications.map((item) => (
-                    <Pressable
+                    <AnimatedPressable
                       key={item.id}
                       onPress={() => {
                         if (item.read) {
@@ -1436,7 +1446,8 @@ export default function PlanetScreen() {
                           previous.map((record) => (record.id === item.id ? { ...record, read: true } : record))
                         );
                       }}
-                      style={[
+                      scaleTo={0.99}
+                      animatedStyle={[
                         styles.notificationCard,
                         isLight && { backgroundColor: theme.cardBg, borderColor: theme.cardBorder },
                         !item.read && styles.notificationCardUnread
@@ -1450,7 +1461,7 @@ export default function PlanetScreen() {
                         <Text style={[styles.notificationCardBody, { color: theme.textMuted }]}>{item.body}</Text>
                         <Text style={[styles.notificationCardTime, { color: theme.textSecondary }]}>{item.time}</Text>
                       </View>
-                    </Pressable>
+                    </AnimatedPressable>
                   ))
                 )}
               </ScrollView>
@@ -1460,16 +1471,16 @@ export default function PlanetScreen() {
 
         {screenMode === "spaceDetail" ? (
           <View style={styles.bottomCtaWrap}>
-            <Pressable style={styles.primaryCta} onPress={() => setScreenMode("bookingForm")}>
+            <AnimatedPressable scaleTo={0.98} animatedStyle={styles.primaryCta} onPress={() => setScreenMode("bookingForm")}>
               <Text style={styles.primaryCtaText}>Select & Continue</Text>
-            </Pressable>
+            </AnimatedPressable>
           </View>
         ) : screenMode === "bookingForm" ? (
           <View style={styles.bottomCtaWrap}>
-            <Pressable style={styles.primaryCta} onPress={handleBookSpace} disabled={isBookingSubmitting}>
+            <AnimatedPressable scaleTo={0.98} animatedStyle={styles.primaryCta} onPress={handleBookSpace} disabled={isBookingSubmitting}>
               {isBookingSubmitting ? <ActivityIndicator size="small" color="#101114" /> : null}
               <Text style={styles.primaryCtaText}>{editingBookingId ? "Update Booking" : "Book Space"}</Text>
-            </Pressable>
+            </AnimatedPressable>
           </View>
         ) : null}
 
@@ -1480,26 +1491,28 @@ export default function PlanetScreen() {
               <FooterBaseSvg light={isLight} />
             </View>
 
-            <Pressable
+            <AnimatedPressable
               onPress={() => setScreenMode("home")}
-              style={[styles.footerIconButton, styles.footerLeftButton]}
+              scaleTo={0.9}
+              animatedStyle={[styles.footerIconButton, styles.footerLeftButton]}
             >
               <LockIcon width={28} height={28} color={isLight ? "#1E2C54" : "#FFFFFF"} />
-            </Pressable>
+            </AnimatedPressable>
 
-            <Pressable style={styles.centerDock} onPress={activateVoiceConversation}>
+            <AnimatedPressable scaleTo={0.95} animatedStyle={styles.centerDock} onPress={activateVoiceConversation}>
               <MicBgSvg />
               <View style={styles.micButtonWrap}>
                 <MicButtonAsset />
               </View>
-            </Pressable>
+            </AnimatedPressable>
 
-            <Pressable
+            <AnimatedPressable
               onPress={() => setScreenMode("activities")}
-              style={[styles.footerIconButton, styles.footerRightButton]}
+              scaleTo={0.9}
+              animatedStyle={[styles.footerIconButton, styles.footerRightButton]}
             >
               <ClockFastForwardIcon width={28} height={28} color={isLight ? "#1E2C54" : "#FFFFFF"} />
-            </Pressable>
+            </AnimatedPressable>
           </View>
         ) : null}
 
@@ -1575,33 +1588,33 @@ export default function PlanetScreen() {
             </View>
             <View style={styles.voiceAssistantHeader}>
               <Text style={styles.voiceAssistantTitle}>Planet Assistant</Text>
-              <Pressable onPress={() => setIsVoiceAssistantActive(false)}>
+              <AnimatedPressable scaleTo={0.95} onPress={() => setIsVoiceAssistantActive(false)}>
                 <Text style={styles.voiceAssistantClose}>Close</Text>
-              </Pressable>
+              </AnimatedPressable>
             </View>
             <View style={styles.voiceMetaRow}>
               <Text style={styles.voiceMetaText}>Voice: {selectedIndianVoiceName}</Text>
-              <Pressable style={styles.voiceSwitchButton} onPress={cycleIndianVoice}>
+              <AnimatedPressable scaleTo={0.96} animatedStyle={styles.voiceSwitchButton} onPress={cycleIndianVoice}>
                 <Text style={styles.voiceSwitchButtonText}>Switch Voice</Text>
-              </Pressable>
+              </AnimatedPressable>
             </View>
             <Text style={styles.voiceAssistantReply}>{voiceReply}</Text>
             <View style={styles.voiceCommandRow}>
-              <Pressable style={styles.voiceCommandChip} onPress={() => handleVoiceCommand("gate")}>
+              <AnimatedPressable scaleTo={0.96} animatedStyle={styles.voiceCommandChip} onPress={() => handleVoiceCommand("gate")}>
                 <Text style={styles.voiceCommandText}>Gate</Text>
-              </Pressable>
-              <Pressable style={styles.voiceCommandChip} onPress={() => handleVoiceCommand("notices")}>
+              </AnimatedPressable>
+              <AnimatedPressable scaleTo={0.96} animatedStyle={styles.voiceCommandChip} onPress={() => handleVoiceCommand("notices")}>
                 <Text style={styles.voiceCommandText}>Notices</Text>
-              </Pressable>
-              <Pressable style={styles.voiceCommandChip} onPress={() => handleVoiceCommand("news")}>
+              </AnimatedPressable>
+              <AnimatedPressable scaleTo={0.96} animatedStyle={styles.voiceCommandChip} onPress={() => handleVoiceCommand("news")}>
                 <Text style={styles.voiceCommandText}>News</Text>
-              </Pressable>
-              <Pressable style={styles.voiceCommandChip} onPress={() => handleVoiceCommand("payments")}>
+              </AnimatedPressable>
+              <AnimatedPressable scaleTo={0.96} animatedStyle={styles.voiceCommandChip} onPress={() => handleVoiceCommand("payments")}>
                 <Text style={styles.voiceCommandText}>Payments</Text>
-              </Pressable>
-              <Pressable style={styles.voiceCommandChip} onPress={() => handleVoiceCommand("booking")}>
+              </AnimatedPressable>
+              <AnimatedPressable scaleTo={0.96} animatedStyle={styles.voiceCommandChip} onPress={() => handleVoiceCommand("booking")}>
                 <Text style={styles.voiceCommandText}>Booking</Text>
-              </Pressable>
+              </AnimatedPressable>
             </View>
           </LinearGradient>
         ) : null}
@@ -1614,7 +1627,7 @@ function ModuleTile({ module, onPress }: { module: ModuleCard; onPress?: () => v
   const Artwork = module.renderArtwork;
 
   return (
-    <Pressable onPress={onPress} style={[styles.moduleCard, { backgroundColor: module.background }]}>
+    <AnimatedPressable onPress={onPress} scaleTo={0.975} animatedStyle={[styles.moduleCard, { backgroundColor: module.background }]}>
       <View style={[styles.moduleArtworkShell, { backgroundColor: module.accent }]}>
         <View style={[styles.moduleArtworkShadow, { backgroundColor: module.darkAccent ?? module.accent }]} />
         <Artwork width={124} height={112} />
@@ -1623,7 +1636,7 @@ function ModuleTile({ module, onPress }: { module: ModuleCard; onPress?: () => v
         <Text style={styles.moduleTitle}>{module.title}</Text>
         <Text style={styles.moduleSubtitle}>{module.subtitle}</Text>
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -1631,9 +1644,13 @@ function FlowHeader({ title, onBack }: { title: string; onBack: () => void }) {
   const theme = profileThemes[useThemeStore((state) => state.mode)];
   return (
     <View style={styles.flowHeader}>
-      <Pressable onPress={onBack} style={[styles.flowBackButton, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
+      <AnimatedPressable
+        onPress={onBack}
+        scaleTo={0.92}
+        animatedStyle={[styles.flowBackButton, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}
+      >
         <Text style={[styles.flowBackButtonText, { color: theme.textSecondary }]}>‹</Text>
-      </Pressable>
+      </AnimatedPressable>
       <Text style={[styles.flowHeaderTitle, { color: theme.textPrimary }]}>{title}</Text>
     </View>
   );
@@ -1652,9 +1669,13 @@ function FormPickerRow({
   return (
     <View style={styles.formRow}>
       <Text style={[styles.formFieldLabel, { color: theme.textSecondary }]}>{label}</Text>
-      <Pressable onPress={onPress} style={[styles.formValueChip, { backgroundColor: theme.elevatedBg, borderColor: theme.cardBorder }]}>
+      <AnimatedPressable
+        onPress={onPress}
+        scaleTo={0.98}
+        animatedStyle={[styles.formValueChip, { backgroundColor: theme.elevatedBg, borderColor: theme.cardBorder }]}
+      >
         <Text style={[styles.formValueText, { color: theme.textPrimary }]}>{value}</Text>
-      </Pressable>
+      </AnimatedPressable>
     </View>
   );
 }

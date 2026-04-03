@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { AnimatedPressable } from "./AnimatedPressable";
 
 type Props = {
   title: string;
@@ -8,13 +9,14 @@ type Props = {
 
 export function LargeButton({ title, onPress, disabled }: Props) {
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
       disabled={disabled}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed, disabled && styles.disabled]}
+      scaleTo={0.97}
+      animatedStyle={[styles.button, disabled && styles.disabled]}
     >
       <Text style={styles.title}>{title}</Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -26,9 +28,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16
-  },
-  pressed: {
-    opacity: 0.85
   },
   disabled: {
     opacity: 0.5

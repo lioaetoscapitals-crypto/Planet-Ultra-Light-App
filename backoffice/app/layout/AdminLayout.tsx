@@ -1,18 +1,11 @@
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../../components/ui/Sidebar";
 import Header from "../../components/ui/Header";
-import { navItems } from "../navigation/routeConfig";
-import { ROUTES } from "../../utils/constants";
+import { allNavItems, dashboardItem, navSections } from "../navigation/routeConfig";
 
 function resolveTitle(pathname: string) {
-  if (pathname.startsWith(ROUTES.gate)) return "Gate";
-  if (pathname.startsWith(ROUTES.invitations)) return "Invitations";
-  if (pathname.startsWith(ROUTES.bookings)) return "Space Bookings";
-  if (pathname.startsWith(ROUTES.notices)) return "Notices";
-  if (pathname.startsWith(ROUTES.market)) return "Market";
-  if (pathname.startsWith(ROUTES.users)) return "Users";
-  if (pathname.startsWith(ROUTES.apartments)) return "Apartments";
-  return "Dashboard";
+  const sorted = [...allNavItems].sort((a, b) => b.path.length - a.path.length);
+  return sorted.find((item) => pathname.startsWith(item.path))?.label ?? "Dashboard";
 }
 
 export default function AdminLayout() {
@@ -21,7 +14,7 @@ export default function AdminLayout() {
 
   return (
     <div className="bo-layout">
-      <Sidebar items={navItems} />
+      <Sidebar dashboard={dashboardItem} sections={navSections} />
       <div className="bo-content-shell">
         <Header title={title} />
         <main className="bo-main">
